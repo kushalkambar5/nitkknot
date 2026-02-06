@@ -349,3 +349,15 @@ export const createLike = handleAsyncError(async (req, res, next) => {
     user,
   });
 });
+
+// Who Liked Me (Premium)
+export const whoLikedMe = handleAsyncError(async (req, res, next) => {
+  // Find users who have the current user's ID in their 'likes' array
+  const likedBy = await User.find({ likes: req.user.id });
+
+  res.status(200).json({
+    success: true,
+    count: likedBy.length,
+    users: likedBy,
+  });
+});
