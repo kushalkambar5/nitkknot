@@ -25,8 +25,21 @@ export const sendSignupOtp = handleAsyncError(async (req, res, next) => {
     interests,
     greenFlags,
     redFlags,
-    profilePics,
+    // profilePics, // Taken from req.files instead
   } = req.body;
+
+  // 0. Validate Images
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "At least one profile picture is required.",
+    });
+  }
+
+  // Convert images to Base64
+  const profilePics = req.files.map((file) => {
+    return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+  });
 
   // 1. Check email domain
   if (!email.endsWith("@nitk.edu.in")) {

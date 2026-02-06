@@ -78,15 +78,10 @@ const UserSchema = new mongoose.Schema(
       default: [],
     },
 
-    profilePics: [
-      {
-        type: String,
-        uploadedAt: {
-          type: Date,
-          default: Date.now,
-        },
-      },
-    ],
+    profilePics: {
+      type: [String], // Base64 strings
+      default: [],
+    },
 
     likes: [
       {

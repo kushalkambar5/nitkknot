@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import fs from "fs";
 
 const sendEmail = async ({ email, subject, message }) => {
   try {
@@ -17,6 +18,7 @@ const sendEmail = async ({ email, subject, message }) => {
       console.log("DEV MODE: Mocking email send");
       console.log("Subject:", subject);
       console.log("Message:", message);
+      fs.writeFileSync("otp.txt", message);
       return true;
     }
 
