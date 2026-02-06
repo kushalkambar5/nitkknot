@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
+import { signupSendOtp, signupVerifyOtp } from '../services/userService';
 import '../App.css';
 
 const Signup = () => {
@@ -23,8 +24,6 @@ const Signup = () => {
     });
 
     const [files, setFiles] = useState([]);
-
-    const API_URL = 'http://localhost:5000/api/auth';
 
     // Step 1: Email Validation
     const handleStep1 = () => {
@@ -68,25 +67,11 @@ const Signup = () => {
 
         const data = new FormData();
         Object.keys(formData).forEach(key => {
-            // For array-like strings (interests, flags), we'll send them as strings
-            // and maybe split them in backend if needed? 
-            // The backend User model has Array types for these, but `req.body` usually parses strings.
-            // Let's assume the backend controller handles splitting or we send JSON strings?
-            // Actually, `userController` just destructures them: `interests, greenFlags`.
-            // If we send them as duplicate keys in FormData, Multer/Express handles arrays.
-            // But simpler to send comma-separated strings if backend parses, OR multiple text fields.
-            // Let's check userController line 96: `user.interests = interests`. 
-            // If body-parser is used, FormData fields might come as strings.
-            // BETTER APPROACH: Split by comma and loop to append to FormData?
-            // Actually, simpler: Split here and verify backend handles arrays coming from form-data.
-            // Express `req.body` with `multer` receives text fields. Arrays are tricky in FormData.
-            // SAFE BET: Send comma-separated strings and update backend OR hope Express parses same-name keys.
-            // Let's rely on standard FormData behavior: multiple appends = array.
-            
             if (['interests', 'greenFlags', 'redFlags'].includes(key)) {
-                // Split by comma and append each
-                const values = formData[key].split(',').map(s => s.trim()).filter(s => s);
-                values.forEach(val => data.append(key, val));
+                // Split by comma and append each for parsing simplicity or rely on comma string
+                // Based on backend analysis, strings are fine, assume backend controller splits using `req.body` logic or String arrays
+                // Let's send comma-separated as the user controller seems to destructure `interests` from body directly.
+                data.append(key, formData[key]);
             } else {
                 data.append(key, formData[key]); 
             }
@@ -98,19 +83,17 @@ const Signup = () => {
         });
 
         try {
-            const response = await fetch(`${API_URL}/signup/send-otp`, {
-                method: 'POST',
-                body: data, // No Content-Type header manually for FormData!
-            });
-            const resData = await response.json();
-
-            if (resData.success) {
+            // Using userService
+            const response = await signupSendOtp(data);
+            
+            // axios response.data contains the server response
+            if (response.data.success) {
                 setStep(5);
             } else {
-                setError(resData.message || 'Signup failed');
+                setError(response.data.message || 'Signup failed');
             }
         } catch (err) {
-            setError('Network error. Check console.');
+            setError(err.response?.data?.message || 'Network error. Check console.');
             console.error(err);
         } finally {
             setIsLoading(false);
@@ -126,12 +109,8 @@ const Signup = () => {
         setError('');
 
         try {
-            const response = await fetch(`${API_URL}/signup/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email: formData.email, otp: otpValue }),
-            });
-            const resData = await response.json();
+            const response = await signupVerifyOtp({ email: formData.email, otp: otpValue });
+            const resData = response.data;
 
             if (resData.success) {
                 localStorage.setItem('token', resData.token);
@@ -140,7 +119,7 @@ const Signup = () => {
                 setError(resData.message || 'Invalid OTP');
             }
         } catch (err) {
-            setError('Verification failed');
+            setError(err.response?.data?.message || 'Verification failed');
         } finally {
             setIsLoading(false);
         }

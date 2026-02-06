@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import Button from '../components/Button'; // Reusing our Button component
+import Button from '../components/Button';
+import { loginSendOtp, loginVerifyOtp } from '../services/userService';
 import '../App.css'; 
 
 const Login = () => {
@@ -10,9 +11,6 @@ const Login = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
-
-    // Base URL - In production this should be in env
-    const API_URL = 'http://localhost:5000/api/auth';
 
     const handleSendOtp = async () => {
         if (!email.endsWith('@nitk.edu.in')) {
@@ -24,13 +22,9 @@ const Login = () => {
         setError('');
 
         try {
-            const response = await fetch(`${API_URL}/login/send-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email }),
-            });
-            
-            const data = await response.json();
+            // Using userService
+            const response = await loginSendOtp({ email });
+            const data = response.data;
 
             if (data.success) {
                 setStep('otp');
@@ -38,7 +32,7 @@ const Login = () => {
                 setError(data.message || 'Failed to send OTP');
             }
         } catch (err) {
-            setError('Something went wrong. Is backend running?');
+            setError(err.response?.data?.message || 'Something went wrong. Is backend running?');
         } finally {
             setIsLoading(false);
         }
@@ -55,13 +49,8 @@ const Login = () => {
         setError('');
 
         try {
-            const response = await fetch(`${API_URL}/login/verify-otp`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, otp: otpValue }),
-            });
-
-            const data = await response.json();
+            const response = await loginVerifyOtp({ email, otp: otpValue });
+            const data = response.data;
 
             if (data.success) {
                 // Save token
@@ -72,7 +61,7 @@ const Login = () => {
                 setError(data.message || 'Invalid OTP');
             }
         } catch (err) {
-            setError('Verification failed');
+            setError(err.response?.data?.message || 'Verification failed');
         } finally {
             setIsLoading(false);
         }
