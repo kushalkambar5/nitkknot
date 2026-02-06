@@ -11,6 +11,7 @@ const createToken = (id) => {
   });
 };
 
+// Parameters confirmed: email, name, branch, year, gender, interestedIn, interests, greenFlags, redFlags, profilePics (files)
 // ==================== SIGNUP FLOW ====================
 
 // Send OTP for Signup
@@ -282,12 +283,11 @@ export const verifyLoginOtp = handleAsyncError(async (req, res, next) => {
 
 // Show All Profiles
 export const showProfile = handleAsyncError(async (req, res, next) => {
-  const users = await User.find({});
+  const users = await User.find({}).select("name bio profilePics"); // Limit fields
 
   res.status(200).json({
     success: true,
     count: users.length,
-    users,
     users,
   });
 });
@@ -299,7 +299,6 @@ export const showMyProfile = handleAsyncError(async (req, res, next) => {
   res.status(200).json({
     success: true,
     user,
-    users: requests,
   });
 });
 

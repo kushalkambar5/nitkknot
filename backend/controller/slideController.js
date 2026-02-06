@@ -107,7 +107,18 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
     });
   }
 
-  await currentUser.save();
+  // Save updates if no match (or just save currentUser changes if any above)
+  if (!isMatch && !currentUser.rightSwipes.includes(targetUserId)) {
+    // We used findByIdAndUpdate above for atomic push if match.
+    // The previous logic was:
+    // if (!currentUser.rightSwipes.includes(targetUserId)) { currentUser.rightSwipes.push(targetUserId); }
+    // But we replaced that with atomic update below.
+  }
+
+  // Add to rightSwipes atomically (if not already there)
+  await User.findByIdAndUpdate(currentUser._id, {
+    $addToSet: { rightSwipes: targetUserId },
+  });
 
   res.status(200).json({
     success: true,

@@ -1,5 +1,6 @@
 import express from "express";
 import dotenv from "dotenv";
+import cors from "cors";
 import handleError from "./utils/handleError.js";
 import userRoutes from "./routes/userRoutes.js";
 import appReportIssueRoutes from "./routes/appReportIssueRoutes.js";
@@ -11,6 +12,7 @@ dotenv.config();
 const app = express();
 
 // ==================== Middleware ====================
+app.use(cors()); // Allow all origins for MVP. For production, specify origin.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
