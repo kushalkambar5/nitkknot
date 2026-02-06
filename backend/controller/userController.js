@@ -279,3 +279,73 @@ export const verifyLoginOtp = handleAsyncError(async (req, res, next) => {
     },
   });
 });
+
+// Show All Profiles
+export const showProfile = handleAsyncError(async (req, res, next) => {
+  const users = await User.find({});
+
+  res.status(200).json({
+    success: true,
+    count: users.length,
+    users,
+    users,
+  });
+});
+
+// Show My Profile
+export const showMyProfile = handleAsyncError(async (req, res, next) => {
+  const user = await User.findById(req.user.id);
+
+  res.status(200).json({
+    success: true,
+    user,
+    users: requests,
+  });
+});
+
+// Show Requests (Who right swiped me)
+export const showRequests = handleAsyncError(async (req, res, next) => {
+  // Find users where my ID is in their rightSwipes array
+  const requests = await User.find({ rightSwipes: req.user.id });
+
+  res.status(200).json({
+    success: true,
+    count: requests.length,
+    users: requests,
+  });
+});
+
+// Create Like
+export const createLike = handleAsyncError(async (req, res, next) => {
+  const targetUserId = req.params.id;
+
+  // Prevent self-like
+  if (targetUserId === req.user.id) {
+    return res.status(400).json({
+      success: false,
+      message: "You cannot like yourself.",
+    });
+  }
+
+  // Check if target user exists
+  const targetUser = await User.findById(targetUserId);
+  if (!targetUser) {
+    return res.status(404).json({
+      success: false,
+      message: "User not found",
+    });
+  }
+
+  // Add to likes array (using $addToSet to avoid duplicates)
+  const user = await User.findByIdAndUpdate(
+    req.user.id,
+    { $addToSet: { likes: targetUserId } },
+    { new: true },
+  );
+
+  res.status(200).json({
+    success: true,
+    message: `You liked ${targetUser.name}`,
+    user,
+  });
+});

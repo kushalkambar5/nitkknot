@@ -2,6 +2,7 @@ import express from "express";
 import dotenv from "dotenv";
 import handleError from "./utils/handleError.js";
 import userRoutes from "./routes/userRoutes.js";
+import appReportIssueRoutes from "./routes/appReportIssueRoutes.js";
 
 dotenv.config();
 
@@ -13,7 +14,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/auth", userRoutes);
-
+app.use("/api/report-issue", appReportIssueRoutes);
 // Health check endpoint
 app.get("/api/health", (req, res) => {
   res.status(200).json({ message: "Server is running" });
