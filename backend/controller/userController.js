@@ -295,10 +295,14 @@ export const showProfile = handleAsyncError(async (req, res, next) => {
 // Show My Profile
 export const showMyProfile = handleAsyncError(async (req, res, next) => {
   const user = await User.findById(req.user.id);
+  const likesReceivedCount = await User.countDocuments({ likes: req.user.id });
+
+  const userObj = user.toObject();
+  userObj.likesReceivedCount = likesReceivedCount;
 
   res.status(200).json({
     success: true,
-    user,
+    user: userObj,
   });
 });
 
@@ -360,3 +364,94 @@ export const whoLikedMe = handleAsyncError(async (req, res, next) => {
     users: likedBy,
   });
 });
+
+// Update Profile
+export const updateProfile = handleAsyncError(async (req, res, next) => {
+  const {
+    name,
+    branch,
+    year,
+    gender,
+    interestedIn,
+    interests,
+    greenFlags,
+    redFlags,
+    existingPhotos, // Array of URLs to keep
+  } = req.body;
+
+  let user = await User.findById(req.user.id);
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  // Handle Photos: Combine existing kept photos with new uploads
+  let finalProfilePics = [];
+
+  // 1. Add existing photos that were kept (passed as JSON string or array)
+  if (existingPhotos) {
+    // Ensure it's an array (might come as string if FormData logic is tricky)
+    const kept = Array.isArray(existingPhotos)
+      ? existingPhotos
+      : [existingPhotos];
+    finalProfilePics.push(...kept);
+  } else if (req.body.existingPhotos === undefined) {
+    // If client didn't send 'existingPhotos' field at all, assume we keep all?
+    // safer to assume we keep none if it's an update form?
+    // Actually, standard FormData practice: if not sent, maybe means empty.
+    // But let's assume the frontend sends everything effectively.
+    // If we are strictly replacing, we typically rely on what's sent.
+    // Let's rely on the frontend sending the list of "final" URLs or "indices".
+    // Simplified approach: Frontend sends 'profilePics' as files and 'existingPhotos' as URLs.
+  }
+
+  // However, form-data arrays can be messy. Let's assume frontend sends:
+  // - existingPhotos: [url1, url2]
+  // - profilePics: [file1, file2]
+  // We just append new files to existing ones? Or replace?
+  // The UI suggests re-ordering.
+  // For MVP: append new uploads to the provided existingPhotos list.
+
+  if (req.files && req.files.length > 0) {
+    const newPics = req.files.map((file) => {
+      return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+    });
+    finalProfilePics.push(...newPics);
+  }
+
+  // Update fields
+  if (name) user.name = name;
+  if (branch) user.branch = branch;
+  if (year) user.year = year;
+  if (gender) user.gender = gender;
+  if (interestedIn) user.interestedIn = interestedIn;
+  if (interests) user.interests = interests; // Assuming comma-separated string or array
+  if (greenFlags) user.greenFlags = greenFlags;
+  if (redFlags) user.redFlags = redFlags;
+
+  // Only update profilePics if we have a definitive list (either existing or new)
+  // If both empty, user might be deleting all photos? (Validation rule: need at least 1?)
+  if (finalProfilePics.length > 0) {
+    user.profilePics = finalProfilePics;
+  }
+
+  await user.save();
+
+  res.status(200).json({
+    success: true,
+    message: "Profile updated successfully",
+    user,
+  });
+});
+
+// Logout
+export const logout = (req, res) => {
+  res.cookie("token", "none", {
+    expires: new Date(Date.now() + 10 * 1000),
+    httpOnly: true,
+  });
+
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  });
+};

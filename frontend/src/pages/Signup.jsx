@@ -9,7 +9,7 @@ const Signup = () => {
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
-    const [otp, setOtp] = useState(['', '', '', '']);
+    const [otp, setOtp] = useState(['', '', '', '', '', '']);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -103,7 +103,7 @@ const Signup = () => {
     // Step 5: Verify OTP
     const handleVerifyOtp = async () => {
         const otpValue = otp.join('');
-        if (otpValue.length !== 4) return setError('Enter 4-digit OTP');
+        if (otpValue.length !== 6) return setError('Enter 6-digit OTP');
 
         setIsLoading(true);
         setError('');
@@ -136,7 +136,7 @@ const Signup = () => {
         const newOtp = [...otp];
         newOtp[index] = value;
         setOtp(newOtp);
-        if (value !== '' && index < 3) document.getElementById(`otp-${index + 1}`)?.focus();
+        if (value !== '' && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
     };
 
     return (
@@ -297,16 +297,16 @@ const Signup = () => {
                             <p className="text-neutral-500">OTP sent to {formData.email}</p>
                         </div>
 
-                         <div className="flex justify-center gap-4 mb-4">
+                         <div className="flex justify-center gap-2 mb-4">
                              {otp.map((digit, idx) => (
-                                <div key={idx} className={`flex h-16 w-16 items-center justify-center border ${digit ? 'border-primary bg-white dark:bg-white/5' : 'border-[#e7cfdd] dark:border-white/20 bg-white dark:bg-white/5'} rounded-2xl shadow-sm transition-all`}>
+                                <div key={idx} className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center border ${digit ? 'border-primary bg-white dark:bg-white/5' : 'border-[#e7cfdd] dark:border-white/20 bg-white dark:bg-white/5'} rounded-xl shadow-sm transition-all`}>
                                      <input
                                         id={`otp-${idx}`}
                                         type="text"
                                         maxLength="1"
                                         value={digit}
                                         onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                        className="w-full h-full text-center text-2xl font-bold bg-transparent outline-none text-neutral-900 dark:text-white"
+                                        className="w-full h-full text-center text-xl sm:text-2xl font-bold bg-transparent outline-none text-neutral-900 dark:text-white"
                                      />
                                 </div>
                              ))}

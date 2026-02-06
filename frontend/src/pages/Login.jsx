@@ -6,7 +6,7 @@ import '../App.css';
 
 const Login = () => {
     const [email, setEmail] = useState('');
-    const [otp, setOtp] = useState(['', '', '', '']);
+    const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [step, setStep] = useState('email'); // 'email' or 'otp'
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
@@ -40,8 +40,8 @@ const Login = () => {
 
     const handleVerifyOtp = async () => {
         const otpValue = otp.join('');
-        if (otpValue.length !== 4) {
-            setError('Please enter a valid 4-digit OTP');
+        if (otpValue.length !== 6) {
+            setError('Please enter a valid 6-digit OTP');
             return;
         }
 
@@ -75,7 +75,7 @@ const Login = () => {
         setOtp(newOtp);
 
         // Auto move focus
-        if (value !== '' && index < 3) {
+        if (value !== '' && index < 5) {
             const nextInput = document.getElementById(`otp-${index + 1}`);
             if (nextInput) nextInput.focus();
         }
@@ -148,19 +148,19 @@ const Login = () => {
                     <>
                         <h1 className="text-[32px] font-bold leading-tight mb-3">Check your inbox</h1>
                          <p className="text-base font-normal leading-normal opacity-70 mb-10">
-                            Enter the 4-digit code sent to <span className="font-semibold text-primary">{email}</span>.
+                            Enter the 6-digit code sent to <span className="font-semibold text-primary">{email}</span>.
                         </p>
 
-                        <div className="flex justify-center gap-4 mb-8">
+                        <div className="flex justify-center gap-2 mb-8">
                              {otp.map((digit, idx) => (
-                                <div key={idx} className={`flex h-16 w-16 items-center justify-center border ${digit ? 'border-primary bg-white dark:bg-white/5' : 'border-[#e7cfdd] dark:border-white/20 bg-white dark:bg-white/5'} rounded-2xl shadow-sm transition-all`}>
+                                <div key={idx} className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center border ${digit ? 'border-primary bg-white dark:bg-white/5' : 'border-[#e7cfdd] dark:border-white/20 bg-white dark:bg-white/5'} rounded-xl shadow-sm transition-all`}>
                                      <input
                                         id={`otp-${idx}`}
                                         type="text"
                                         maxLength="1"
                                         value={digit}
                                         onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                        className="w-full h-full text-center text-2xl font-bold bg-transparent outline-none text-neutral-900 dark:text-white"
+                                        className="w-full h-full text-center text-xl sm:text-2xl font-bold bg-transparent outline-none text-neutral-900 dark:text-white"
                                      />
                                 </div>
                              ))}

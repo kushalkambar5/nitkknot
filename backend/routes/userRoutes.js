@@ -9,6 +9,8 @@ import {
   showRequests,
   createLike,
   whoLikedMe,
+  updateProfile,
+  logout,
 } from "../controller/userController.js";
 import upload from "../middleware/uploadMiddleware.js";
 import { protect, restrictToPremium } from "../middleware/authMiddleware.js";
@@ -25,5 +27,7 @@ router.get("/me", protect, showMyProfile);
 router.get("/requests", protect, restrictToPremium, showRequests);
 router.post("/like/:id", protect, createLike);
 router.get("/likes", protect, restrictToPremium, whoLikedMe);
+router.put("/update", protect, upload.array("profilePics", 6), updateProfile);
+router.post("/logout", logout);
 
 export default router;

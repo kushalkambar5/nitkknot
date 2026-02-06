@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
 @theme {
-  --color-primary: #e11d48;
-  --color-primary-hover: #be123c;
-  --color-background-light: #fdf8f9;
-  --color-background-dark: #131015;
+  --color-primary: #ee2b9d;
+  --color-primary-hover: #d11a82;
+  --color-background-light: #f8f6f7;
+  --color-background-dark: #22101a;
+  --color-success: #10b981;
+  --color-danger: #ef4444;
   --font-display: "Plus Jakarta Sans", sans-serif;
 }
 

@@ -20,6 +20,11 @@ export const getRequests = () => api.get("/auth/requests"); // "Who swipes right
 export const getLikes = () => api.get("/auth/likes"); // "Who liked me" (Premium)
 export const getAllProfiles = () => api.get("/auth/profiles"); // Admin/Debug usage?
 export const createLike = (userId) => api.post(`/auth/like/${userId}`);
+export const updateProfile = (formData) =>
+  api.put("/auth/update", formData, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+export const logout = () => api.post("/auth/logout");
 
 const userService = {
   signupSendOtp,
@@ -31,6 +36,8 @@ const userService = {
   getLikes,
   getAllProfiles,
   createLike,
+  updateProfile,
+  logout,
 };
 
 export default userService;

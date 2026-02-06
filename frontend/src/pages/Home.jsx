@@ -18,7 +18,7 @@ const Home = () => {
 
   // Check auth on mount
   useEffect(() => {
-    const token = document.cookie.includes("token=");
+    const token = localStorage.getItem('token');
     if (token) {
       setIsLoggedIn(true);
       fetchProfiles();
@@ -153,7 +153,7 @@ const Home = () => {
             <span className="material-symbols-outlined">school</span>
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight">Campus Mate</h1>
+            <h1 className="text-xl font-bold tracking-tight">NITKnot</h1>
           </div>
         </div>
         <button className="w-10 h-10 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">
