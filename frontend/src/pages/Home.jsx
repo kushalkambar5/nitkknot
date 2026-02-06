@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 import Button from '../components/Button';
 import FeatureCard from '../components/FeatureCard';
 import TrustCard from '../components/TrustCard';
 import BottomNavbar from '../components/BottomNavbar';
-import { getSlides, rightSwipe, leftSwipe, like } from '../services/slidesService';
+import { getSlides, rightSwipe, leftSwipe, report } from '../services/slidesService';
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -15,6 +15,7 @@ const Home = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [showModal, setShowModal] = useState(false);
 
   // Check auth on mount
   useEffect(() => {
@@ -28,7 +29,6 @@ const Home = () => {
   const fetchProfiles = async () => {
     setLoading(true);
     try {
-      // using slidesService
       const response = await getSlides();
       const data = response.data;
       
@@ -51,12 +51,15 @@ const Home = () => {
     if (!currentProfile) return;
 
     try {
-        if (action === 'pass') {
+        if (action === 'left') {
             await leftSwipe(currentProfile._id);
-        } else if (action === 'like') { // Heart button
+        } else if (action === 'right') {
             await rightSwipe(currentProfile._id);
-        } else if (action === 'super') { // Star button
-            await like(currentProfile._id);
+        } else if (action === 'report') {
+            const reason = prompt("Describe the issue with this profile:");
+            if (!reason) return;
+            await report(currentProfile._id, reason);
+            alert("User reported.");
         }
 
       // Move to next profile
@@ -69,7 +72,7 @@ const Home = () => {
 
   const nextImage = (e) => {
     e.stopPropagation();
-    if (currentProfile && currentImageIndex < currentProfile.profilePics.length - 1) {
+    if (currentProfile && currentProfile.profilePics && currentImageIndex < currentProfile.profilePics.length - 1) {
       setCurrentImageIndex(prev => prev + 1);
     }
   };
@@ -79,6 +82,21 @@ const Home = () => {
     if (currentProfile && currentImageIndex > 0) {
       setCurrentImageIndex(prev => prev - 1);
     }
+  };
+  
+  const handleModalClose = () => setShowModal(false);
+    
+  const handleSendWave = async () => {
+        await handleSwipe('right');
+        setShowModal(false);
+  };
+  
+  const getYearLabel = (y) => {
+        if (y == 1) return "Fresher";
+        if (y == 2) return "Sophomore";
+        if (y == 3) return "Pre-Final Year";
+        if (y == 4) return "Senior";
+        return "Student";
   };
 
   // ==================== GUEST VIEW ====================
@@ -119,9 +137,9 @@ const Home = () => {
               <div className="h-1.5 w-14 bg-primary rounded-full"></div>
             </div>
             <div className="grid grid-cols-1 gap-4 @[480px]:grid-cols-3">
-              <FeatureCard icon="verified_user" title="Create Profile" description="Verified NITK email only" />
-              <FeatureCard icon="style" title="Swipe & Match" description="Find students like you" />
-              <FeatureCard icon="forum" title="Chat & Connect" description="Safe and simple chats" />
+              <FeatureCard key="fc1" icon="verified_user" title="Create Profile" description="Verified NITK email only" />
+              <FeatureCard key="fc2" icon="style" title="Swipe & Match" description="Find students like you" />
+              <FeatureCard key="fc3" icon="forum" title="Chat & Connect" description="Safe and simple chats" />
             </div>
           </section>
   
@@ -131,9 +149,9 @@ const Home = () => {
               <h3 className="text-2xl font-extrabold tracking-tight">Trust & Safety</h3>
             </div>
             <div className="grid grid-cols-1 gap-10">
-              <TrustCard icon="shield_person" title="Only Verified Users" description="Every active @nitk.edu.in email validation." />
-              <TrustCard icon="domain" title="No Outside Profiles" description="Exclusive to the NITK campus." />
-              <TrustCard icon="gpp_maybe" title="Report & Block" description="Zero tolerance for harassment." />
+              <TrustCard key="tc1" icon="shield_person" title="Only Verified Users" description="Every active @nitk.edu.in email validation." />
+              <TrustCard key="tc2" icon="domain" title="No Outside Profiles" description="Exclusive to the NITK campus." />
+              <TrustCard key="tc3" icon="gpp_maybe" title="Report & Block" description="Zero tolerance for harassment." />
             </div>
           </section>
         </main>
@@ -143,8 +161,33 @@ const Home = () => {
   }
 
   // ==================== AUTHENTICATED VIEW (SWIPE DECK) ====================
+  // Check if no profiles
+  if (!loading && (!profiles || profiles.length === 0 || currentProfileIndex >= profiles.length)) {
+      return (
+          <div className="bg-background-light dark:bg-background-dark text-[#1b0d16] dark:text-white min-h-screen flex flex-col font-display">
+               <header className="flex items-center justify-between px-6 pt-6 pb-2 max-w-md mx-auto w-full">
+                  <div className="flex items-center gap-2">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+                      <span className="material-symbols-outlined">school</span>
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold tracking-tight">NITKnot</h1>
+                    </div>
+                  </div>
+              </header>
+              <main className="flex-1 flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto w-full">
+                  <span className="material-symbols-outlined text-6xl text-neutral-300 mb-4">sentiment_dissatisfied</span>
+                  <h3 className="text-xl font-bold">No more profiles</h3>
+                  <p className="text-neutral-500 mb-6">Check back later or adjust your filters.</p>
+                  <button onClick={fetchProfiles} className="px-6 py-2 bg-primary text-white rounded-full font-bold shadow-lg">Refresh</button>
+              </main>
+              <BottomNavbar />
+          </div>
+      );
+  }
+
   return (
-    <div className="bg-background-light dark:bg-background-dark text-[#1b0d16] dark:text-white transition-colors duration-300 min-h-screen flex flex-col font-display pb-20"> {/* pb-20 for bottom nav */}
+    <div className="bg-background-light dark:bg-background-dark text-[#1b0d16] dark:text-white transition-colors duration-300 min-h-screen flex flex-col font-display pb-20"> 
       
       {/* Auth Header */}
       <header className="flex items-center justify-between px-6 pt-6 pb-2 max-w-md mx-auto w-full">
@@ -156,23 +199,12 @@ const Home = () => {
             <h1 className="text-xl font-bold tracking-tight">NITKnot</h1>
           </div>
         </div>
-        <button className="w-10 h-10 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center">
-          <span className="material-symbols-outlined text-gray-600 dark:text-gray-300">tune</span>
-        </button>
       </header>
   
       {/* Main Swipe Area */}
       <main className="flex-1 px-4 py-2 relative flex flex-col max-w-md mx-auto w-full h-[calc(100vh-160px)]">
         
         {loading && <div className="flex-1 flex items-center justify-center">Loading profiles...</div>}
-        
-        {!loading && !currentProfile && (
-           <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-              <span className="material-symbols-outlined text-6xl text-neutral-300 mb-4">sentiment_dissatisfied</span>
-              <h3 className="text-xl font-bold">No more profiles</h3>
-              <p className="text-neutral-500">Check back later or adjust your filters.</p>
-           </div>
-        )}
 
         {!loading && currentProfile && (
           <>
@@ -181,11 +213,12 @@ const Home = () => {
               
               {/* Image Container */}
               <div className="relative h-[70%] w-full overflow-hidden bg-gray-200 cursor-pointer" onClick={nextImage}>
-                {currentProfile.profilePics && currentProfile.profilePics.length > 0 ? (
+                {currentProfile.profilePics && currentProfile.profilePics.length > 0 && currentProfile.profilePics[currentImageIndex] ? (
                     <img 
                         className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300" 
                         src={currentProfile.profilePics[currentImageIndex]} 
-                        alt="Profile" 
+                        alt="Profile"
+                        onError={(e) => {e.target.style.display = 'none'; e.target.parentElement.classList.add('bg-neutral-200');}}
                     />
                 ) : (
                     <div className="absolute inset-0 flex items-center justify-center bg-neutral-200 dark:bg-neutral-800">
@@ -233,7 +266,6 @@ const Home = () => {
                   )}
                   {currentProfile.interests && (
                     <div className="flex flex-wrap gap-2">
-                        {/* Assuming interests is a comma string or array. Handling both just in case */}
                         {(Array.isArray(currentProfile.interests) ? currentProfile.interests : (currentProfile.interests || '').split(',')).slice(0, 3).map((tag, i) => (
                             <span key={i} className="px-3 py-1 rounded-full bg-gray-100 dark:bg-white/5 text-xs font-semibold text-gray-500 dark:text-gray-400">
                                 {tag.trim()}
@@ -243,45 +275,134 @@ const Home = () => {
                   )}
                 </div>
                 
-                <button className="w-full py-3 mt-4 rounded-full bg-primary/10 dark:bg-primary/20 text-primary font-bold text-sm tracking-wide uppercase transition-transform active:scale-95">
+                <button 
+                    onClick={() => setShowModal(true)}
+                    className="w-full py-3 mt-4 rounded-full bg-primary/10 dark:bg-primary/20 text-primary font-bold text-sm tracking-wide uppercase transition-transform active:scale-95">
                     View Full Profile
                 </button>
               </div>
             </div>
             
             {/* Swipe Action Buttons */}
-            <div className="flex items-center justify-around py-6 px-4">
-              {/* Report */}
-              <button onClick={() => console.log('Report logic needed')} className="group flex flex-col items-center gap-1 transition-transform active:scale-90">
-                <div className="w-12 h-12 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center text-gray-400 group-hover:bg-gray-100 dark:group-hover:bg-white/5">
-                  <span className="material-symbols-outlined text-xl">flag</span>
-                </div>
+            <div className="flex items-center justify-between px-6 py-6 w-full max-w-[320px] mx-auto">
+              {/* Left Arrow (Pass) */}
+              <button onClick={() => handleSwipe('left')} className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90">
+                <span className="material-symbols-outlined text-2xl">arrow_back</span>
               </button>
               
-              {/* Pass (Left Swipe) */}
-              <button onClick={() => handleSwipe('pass')} className="group flex flex-col items-center gap-1 transition-transform active:scale-90">
-                <div className="w-16 h-16 rounded-full border-2 border-red-500/20 flex items-center justify-center text-red-500 bg-white dark:bg-zinc-800 shadow-lg">
-                  <span className="material-symbols-outlined text-3xl">close</span>
-                </div>
+              {/* Report (Flag) */}
+              <button onClick={() => handleSwipe('report')} className="w-14 h-14 rounded-full bg-white dark:bg-zinc-800 border border-gray-100 dark:border-white/5 flex items-center justify-center text-gray-400 hover:text-red-500 shadow-md transition-transform active:scale-90">
+                <span className="material-symbols-outlined text-2xl">flag</span>
               </button>
               
-              {/* Like (Right Swipe) */}
-              <button onClick={() => handleSwipe('like')} className="group flex flex-col items-center gap-1 transition-transform active:scale-90">
-                <div className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30">
-                  <span className="material-symbols-outlined fill text-3xl">favorite</span>
-                </div>
+              {/* Like (Heart) */}
+              <button onClick={() => handleSwipe('right')} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
+                <span className="material-symbols-outlined fill text-3xl">favorite</span>
               </button>
               
-              {/* Super Like */}
-              <button onClick={() => handleSwipe('super')} className="group flex flex-col items-center gap-1 transition-transform active:scale-90">
-                 <div className="w-12 h-12 rounded-full border border-gray-200 dark:border-white/10 flex items-center justify-center text-blue-500 group-hover:bg-gray-100 dark:group-hover:bg-white/5">
-                  <span className="material-symbols-outlined text-xl">star</span>
-                </div>
+              {/* Right Arrow (Like/Pass?) */}
+               <button onClick={() => handleSwipe('right')} className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90">
+                <span className="material-symbols-outlined text-2xl">arrow_forward</span>
               </button>
             </div>
           </>
         )}
       </main>
+
+      {/* Modal Implementation */}
+        {showModal && currentProfile && (
+            <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex flex-col justify-end animate-in fade-in duration-200">
+                <div className="relative w-full max-w-md mx-auto bg-background-light dark:bg-zinc-900 rounded-t-3xl shadow-2xl flex flex-col max-h-[90vh] animate-in slide-in-from-bottom duration-300">
+                    {/* Handle */}
+                    <div className="flex h-6 w-full items-center justify-center shrink-0 pt-2" onClick={handleModalClose}>
+                        <div className="h-1.5 w-12 rounded-full bg-neutral-300 dark:bg-neutral-700"></div>
+                    </div>
+                    
+                    {/* Header */}
+                    <div className="flex items-center justify-between px-6 py-4 border-b border-neutral-100 dark:border-white/5 shrink-0">
+                        <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-primary">
+                                {currentProfile.profilePics && currentProfile.profilePics[0] ? (
+                                    <img src={currentProfile.profilePics[0]} className="w-full h-full object-cover" alt="Thumb" />
+                                ) : (
+                                    <div className="w-full h-full bg-neutral-200 flex items-center justify-center"><span className="material-symbols-outlined text-xs">person</span></div>
+                                )}
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-neutral-900 dark:text-white leading-tight">{currentProfile.name}</h2>
+                                <p className="text-xs font-bold text-primary uppercase tracking-wider">{currentProfile.branch} • {currentProfile.year ? getYearLabel(currentProfile.year) : ''}</p>
+                            </div>
+                        </div>
+                         <button onClick={handleModalClose} className="w-10 h-10 flex items-center justify-center rounded-full bg-neutral-100 dark:bg-white/5 text-neutral-500 hover:bg-neutral-200 dark:hover:bg-white/10 transition">
+                            <span className="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+
+                    {/* Scrollable Content */}
+                    <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8 pb-12">
+                        {/* Interests */}
+                        {currentProfile.interests && (
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="material-symbols-outlined text-primary">auto_awesome</span>
+                                    <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Interests</h3>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {(Array.isArray(currentProfile.interests) ? currentProfile.interests : currentProfile.interests.split(',')).map((tag, i) => (
+                                         <div key={i} className="flex items-center gap-2 px-4 py-2 bg-primary/10 border border-primary/20 rounded-full">
+                                            <span className="text-sm font-semibold text-neutral-900 dark:text-white">{tag.trim()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Green Flags */}
+                        {currentProfile.greenFlags && currentProfile.greenFlags.length > 0 && (
+                            <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="material-symbols-outlined text-success">check_circle</span>
+                                    <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Green Flags</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {(Array.isArray(currentProfile.greenFlags) ? currentProfile.greenFlags : currentProfile.greenFlags.split(',')).map((flag, i) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-success/5 border border-success/10 rounded-xl">
+                                             <div className="w-8 h-8 flex shrink-0 items-center justify-center rounded-full bg-success/20 text-success">
+                                                <span className="material-symbols-outlined text-lg">thumb_up</span>
+                                            </div>
+                                            <span className="text-sm font-medium text-neutral-900 dark:text-white">{flag.trim()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                        
+                        {/* Red Flags */}
+                        {currentProfile.redFlags && currentProfile.redFlags.length > 0 && (
+                             <section>
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="material-symbols-outlined text-danger">error</span>
+                                    <h3 className="text-lg font-bold text-neutral-900 dark:text-white">Red Flags</h3>
+                                </div>
+                                <div className="grid grid-cols-1 gap-3">
+                                    {(Array.isArray(currentProfile.redFlags) ? currentProfile.redFlags : currentProfile.redFlags.split(',')).map((flag, i) => (
+                                        <div key={i} className="flex items-center gap-3 p-3 bg-danger/5 border border-danger/10 rounded-xl">
+                                             <div className="w-8 h-8 flex shrink-0 items-center justify-center rounded-full bg-danger/20 text-danger">
+                                                <span className="material-symbols-outlined text-lg">warning</span>
+                                            </div>
+                                            <span className="text-sm font-medium text-neutral-900 dark:text-white">{flag.trim()}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
+                        {/* Action Buttons Removed as per request */}
+                        <div className="pb-8"></div>
+                    </div>
+                </div>
+            </div>
+        )}
       
       <BottomNavbar /> 
     </div>

@@ -30,8 +30,10 @@ export const sendSlideData = handleAsyncError(async (req, res, next) => {
 
   // Fetch users, limit to 20 for one batch
   const users = await User.find(filter)
-    .select("name gender year branch bio profilePics interests") // Select relevant fields for card
-    .limit(20);
+    .select(
+      "name gender year branch bio profilePics interests greenFlags redFlags",
+    ) // Select relevant fields for card
+    .limit(5);
 
   res.status(200).json({
     success: true,
