@@ -1,6 +1,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import handleError from "./utils/handleError.js";
+import userRoutes from "./routes/userRoutes.js";
 
 dotenv.config();
 
@@ -9,6 +10,9 @@ const app = express();
 // ==================== Middleware ====================
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Routes
+app.use("/api/auth", userRoutes);
 
 // Health check endpoint
 app.get("/api/health", (req, res) => {
