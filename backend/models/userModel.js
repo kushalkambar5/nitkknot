@@ -104,6 +104,12 @@ const UserSchema = new mongoose.Schema(
       },
     ],
 
+    // Timestamps for when the user performed right-swipes (used for rate limiting)
+    rightSwipeTimestamps: {
+      type: [Date],
+      default: [],
+    },
+
     leftSwipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 
     matches: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],

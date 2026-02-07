@@ -61,6 +61,35 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
       .json({ success: false, message: "Cannot swipe yourself" });
   }
 
+  // Enforce free-user swipe limit
+  const SWIPE_LIMIT_FREE = 3;
+  const PREMIER_HOURLY_LIMIT = 15;
+  const oneHourAgo = Date.now() - 60 * 60 * 1000;
+
+  if (!currentUser.isPremium) {
+    const rightCount = Array.isArray(currentUser.rightSwipes)
+      ? currentUser.rightSwipes.length
+      : 0;
+    if (rightCount >= SWIPE_LIMIT_FREE) {
+      return res.status(403).json({
+        success: false,
+        message: "Upgrade to Premier to swipe more users.",
+      });
+    }
+  } else {
+    // Premier users: enforce hourly swipe cap based on timestamps
+    const timestamps = Array.isArray(currentUser.rightSwipeTimestamps)
+      ? currentUser.rightSwipeTimestamps
+      : [];
+    const recentCount = timestamps.filter((t) => new Date(t).getTime() > oneHourAgo).length;
+    if (recentCount >= PREMIER_HOURLY_LIMIT) {
+      return res.status(403).json({
+        success: false,
+        message: `Premier hourly swipe limit reached (${PREMIER_HOURLY_LIMIT} per hour).`,
+      });
+    }
+  }
+
   // Add to rightSwipes if not already there
   // Using $addToSet logic via Mongoose array methods or direct update
   // Since we might need to modify 'matches', let's stick to document instance save or findOneAndUpdate
@@ -118,6 +147,7 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
   // Add to rightSwipes atomically (if not already there)
   await User.findByIdAndUpdate(currentUser._id, {
     $addToSet: { rightSwipes: targetUserId },
+    $push: { rightSwipeTimestamps: new Date() },
   });
 
   // NEW: Add to targetUser's rightSwipesReceived

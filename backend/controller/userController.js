@@ -174,6 +174,26 @@ export const verifySignupOtp = handleAsyncError(async (req, res, next) => {
   });
 });
 
+// Upgrade to Premium (simple toggle for demo/payment integration outside scope)
+export const upgradeToPremium = handleAsyncError(async (req, res, next) => {
+  const user = req.user;
+  if (!user)
+    return res
+      .status(401)
+      .json({ success: false, message: "Not authenticated" });
+
+  if (user.isPremium) {
+    return res
+      .status(200)
+      .json({ success: true, message: "Already a Premier user", user });
+  }
+
+  user.isPremium = true;
+  await user.save();
+
+  res.status(200).json({ success: true, message: "Upgraded to Premier", user });
+});
+
 // ==================== LOGIN FLOW ====================
 
 // Send OTP for Login
@@ -372,6 +392,46 @@ export const whoLikedMe = handleAsyncError(async (req, res, next) => {
   });
 });
 
+// Get Swipe History (Who I right swiped, left swiped, or matched)
+export const getSwipeHistory = handleAsyncError(async (req, res, next) => {
+  const user = await User.findById(req.user.id)
+    .populate("rightSwipes", "name bio profilePics year branch")
+    .populate("leftSwipes", "name bio profilePics year branch")
+    .populate("matches", "name bio profilePics year branch");
+
+  const historyMap = new Map();
+
+  // 1. Left Swipes (Passed)
+  if (user.leftSwipes) {
+    user.leftSwipes.forEach((u) => {
+      historyMap.set(u._id.toString(), { user: u, type: "Passed" });
+    });
+  }
+
+  // 2. Right Swipes (Liked)
+  if (user.rightSwipes) {
+    user.rightSwipes.forEach((u) => {
+      historyMap.set(u._id.toString(), { user: u, type: "Liked" });
+    });
+  }
+
+  // 3. Matches (Overwrite others as this is the highest status)
+  if (user.matches) {
+    user.matches.forEach((u) => {
+      historyMap.set(u._id.toString(), { user: u, type: "Matched" });
+    });
+  }
+
+  const history = Array.from(historyMap.values());
+
+  res.status(200).json({
+    success: true,
+    count: history.length,
+    users: history,
+  });
+});
+
+// Update Profile
 // Update Profile
 export const updateProfile = handleAsyncError(async (req, res, next) => {
   const {
@@ -394,30 +454,17 @@ export const updateProfile = handleAsyncError(async (req, res, next) => {
   // Handle Photos: Combine existing kept photos with new uploads
   let finalProfilePics = [];
 
-  // 1. Add existing photos that were kept (passed as JSON string or array)
+  // 1. Add existing photos that were kept
   if (existingPhotos) {
-    // Ensure it's an array (might come as string if FormData logic is tricky)
+    // FormData sends arrays with same key as separate entries, but express/body-parser might handle differently
+    // If multiple sends as array, if single sends as string.
     const kept = Array.isArray(existingPhotos)
       ? existingPhotos
       : [existingPhotos];
     finalProfilePics.push(...kept);
-  } else if (req.body.existingPhotos === undefined) {
-    // If client didn't send 'existingPhotos' field at all, assume we keep all?
-    // safer to assume we keep none if it's an update form?
-    // Actually, standard FormData practice: if not sent, maybe means empty.
-    // But let's assume the frontend sends everything effectively.
-    // If we are strictly replacing, we typically rely on what's sent.
-    // Let's rely on the frontend sending the list of "final" URLs or "indices".
-    // Simplified approach: Frontend sends 'profilePics' as files and 'existingPhotos' as URLs.
   }
 
-  // However, form-data arrays can be messy. Let's assume frontend sends:
-  // - existingPhotos: [url1, url2]
-  // - profilePics: [file1, file2]
-  // We just append new files to existing ones? Or replace?
-  // The UI suggests re-ordering.
-  // For MVP: append new uploads to the provided existingPhotos list.
-
+  // 2. Add new uploads
   if (req.files && req.files.length > 0) {
     const newPics = req.files.map((file) => {
       return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
@@ -431,14 +478,35 @@ export const updateProfile = handleAsyncError(async (req, res, next) => {
   if (year) user.year = year;
   if (gender) user.gender = gender;
   if (interestedIn) user.interestedIn = interestedIn;
-  if (interests) user.interests = interests; // Assuming comma-separated string or array
-  if (greenFlags) user.greenFlags = greenFlags;
-  if (redFlags) user.redFlags = redFlags;
 
-  // Only update profilePics if we have a definitive list (either existing or new)
-  // If both empty, user might be deleting all photos? (Validation rule: need at least 1?)
+  // Helper to parse comma-separated strings to arrays
+  const parseArrayField = (field) => {
+    if (!field) return undefined;
+    if (Array.isArray(field)) return field;
+    return field
+      .split(",")
+      .map((item) => item.trim())
+      .filter(Boolean);
+  };
+
+  if (interests) user.interests = parseArrayField(interests);
+  if (greenFlags) user.greenFlags = parseArrayField(greenFlags);
+  if (redFlags) user.redFlags = parseArrayField(redFlags);
+
+  // Only update profilePics if we have a definitive list (new + existing)
+  // If no photos sent (finalProfilePics empty) AND no existingPhotos key was present,
+  // it might mean no change intended?
+  // But if existingPhotos KEY is present in body (even if empty, though FormData usually omits), it implies update.
+  // Ideally, if finalProfilePics is empty but user intended to delete all, we should allow it?
+  // Let's assume valid state requires at least 1 photo for a profile usually, but for update:
   if (finalProfilePics.length > 0) {
     user.profilePics = finalProfilePics;
+  } else if (
+    req.body.existingPhotos !== undefined ||
+    (req.files && req.files.length > 0)
+  ) {
+    // If explicit update attempted but resulted in 0 photos, maybe allow?
+    // user.profilePics = []; // Uncomment if we allow 0 photos
   }
 
   await user.save();

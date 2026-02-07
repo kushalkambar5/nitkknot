@@ -1,23 +1,108 @@
 @import "tailwindcss";
 
 @theme {
+  /* =====================
+     Brand
+  ====================== */
   --color-primary: #ee2b9d;
   --color-primary-hover: #d11a82;
-  --color-background-light: #f8f6f7;
-  --color-background-dark: #22101a;
+  --color-primary-soft: #3a0f26;
+
+  /* =====================
+     Backgrounds (DARKER)
+  ====================== */
+  --color-background-main: #0b0b0f;     /* very dark base */
+  --color-background-light: #111118;    /* main app bg */
+  --color-background-card: #16161f;     /* lifted card */
+  --color-background-muted: #1c1c27;    /* sections */
+
+  /* =====================
+     Text (HIGH CONTRAST)
+  ====================== */
+  --color-text-primary: #f9fafb;        /* almost white */
+  --color-text-secondary: #c7c9d1;
+  --color-text-muted: #8b8fa3;
+  --color-text-inverted: #0b0b0f;
+
+  /* =====================
+     Borders & dividers
+  ====================== */
+  --color-border: #232334;
+  --color-border-strong: #2f2f45;
+
+  /* =====================
+     Status
+  ====================== */
   --color-success: #10b981;
+  --color-success-soft: #062d1f;
+
   --color-danger: #ef4444;
+  --color-danger-soft: #3b0a0a;
+
+  /* =====================
+     Font
+  ====================== */
   --font-display: "Plus Jakarta Sans", sans-serif;
 }
 
+/* =====================
+   Global styles
+====================== */
 body {
-  font-family: "Plus Jakarta Sans", sans-serif;
+  font-family: var(--font-display);
+  background-color: var(--color-background-light);
+  color: var(--color-text-primary);
 }
 
+/* =====================
+   Material Icons
+====================== */
 .material-symbols-outlined {
-  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+  font-variation-settings:
+    'FILL' 0,
+    'wght' 400,
+    'GRAD' 0,
+    'opsz' 24;
+  color: var(--color-text-secondary);
 }
 
+/* Active / selected icons */
 .fill-icon {
   font-variation-settings: 'FILL' 1;
+  color: var(--color-primary);
+}
+
+/* =====================
+   Utility helpers
+====================== */
+.bg-card {
+  background-color: var(--color-background-card);
+}
+
+.text-muted {
+  color: var(--color-text-muted);
+}
+
+.border-default {
+  border-color: var(--color-border);
+}
+
+.primary-soft {
+  background-color: var(--color-primary-soft);
+}
+/* =====================
+   Custom Utilities
+====================== */
+.blur-profile {
+  filter: blur(24px);
+  transform: scale(1.1);
+}
+
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }

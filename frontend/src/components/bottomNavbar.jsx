@@ -8,8 +8,8 @@ const BottomNavbar = () => {
 
     const navItems = [
         { path: '/', icon: 'explore', label: 'Explore' },
+        { path: '/connections', icon: 'diversity_1', label: 'Connections' },
         { path: '/chat', icon: 'chat_bubble', label: 'Chat' },
-        { path: '/likes', icon: 'favorite', label: 'Likes' },
         { path: '/profile', icon: 'person', label: 'Profile' }
     ];
 

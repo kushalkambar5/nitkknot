@@ -6,7 +6,8 @@ import Button from '../components/Button';
 import FeatureCard from '../components/FeatureCard';
 import TrustCard from '../components/TrustCard';
 import BottomNavbar from '../components/BottomNavbar';
-import { getSlides, rightSwipe, leftSwipe, like, report } from '../services/slidesService';
+import { getSlides, rightSwipe, leftSwipe, report } from '../services/slidesService';
+import userService from '../services/userService';
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -16,6 +17,7 @@ const Home = () => {
   const [error, setError] = useState('');
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showModal, setShowModal] = useState(false);
+  const [showPremiumPrompt, setShowPremiumPrompt] = useState(false);
 
   // Check auth on mount
   useEffect(() => {
@@ -29,14 +31,38 @@ const Home = () => {
   const fetchProfiles = async () => {
     setLoading(true);
     try {
-      const response = await getSlides();
-      const data = response.data;
-      
-      if (data.success) {
-        setProfiles(data.users);
-      } else {
+      // Fetch current user and profiles, then compute mutual interest matches
+      const [meRes, slidesRes] = await Promise.all([userService.getMyProfile(), getSlides()]);
+      const meData = meRes.data;
+      const slidesData = slidesRes.data;
+
+      if (!slidesData.success) {
         setError('Failed to load profiles');
+        return;
       }
+
+      const me = meData?.user || null;
+
+      const parseList = (val) => {
+        if (!val) return [];
+        if (Array.isArray(val)) return val.map(v => String(v).trim().toLowerCase()).filter(Boolean);
+        return String(val).split(',').map(v => v.trim().toLowerCase()).filter(Boolean);
+      };
+
+      const myInterests = parseList(me?.interests);
+
+      const usersWithMatch = (slidesData.users || []).map(u => {
+        const theirInterests = parseList(u?.interests);
+        // count intersection
+        const common = theirInterests.filter(i => myInterests.includes(i));
+        const matchCount = common.length;
+        return { ...u, matchCount, commonInterests: common };
+      });
+
+      // Sort descending by matchCount so highest matches appear first
+      usersWithMatch.sort((a, b) => b.matchCount - a.matchCount);
+
+      setProfiles(usersWithMatch);
     } catch (err) {
       console.error(err);
       setError('Network error');
@@ -54,9 +80,13 @@ const Home = () => {
         if (action === 'left') {
             await leftSwipe(currentProfile._id);
         } else if (action === 'right') {
-            await rightSwipe(currentProfile._id);
-        } else if (action === 'like') {
-            await like(currentProfile._id);
+            // Attempt right swipe and handle server-side premium gating
+            const resp = await rightSwipe(currentProfile._id);
+            // If server responded with 403 (premium required) or explicit failure about premium
+            if (resp && (resp.status === 403 || (resp.data && resp.data.success === false && /premium/i.test(resp.data.message)))) {
+              setShowPremiumPrompt(true);
+              return; // do not advance to next profile
+            }
         } else if (action === 'report') {
             const reason = prompt("Describe the issue with this profile:");
             if (!reason) return;
@@ -250,6 +280,12 @@ const Home = () => {
                   <div className="flex items-center gap-2 mb-1">
                     <h2 className="text-3xl font-bold drop-shadow-md">{currentProfile.name}, {currentProfile.year}</h2>
                     <span className="material-symbols-outlined text-blue-400 fill text-xl drop-shadow-md">verified</span>
+                    {typeof currentProfile.matchCount === 'number' && currentProfile.matchCount > 0 && (
+                        <span className="ml-2 inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-sm font-semibold">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-primary" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3.22l.61.53 1.34 1.16.3.26c1.54 1.33 3.9 3.38 3.9 6.03 0 2.07-1.68 3.75-3.75 3.75H8.6C6.53 15 4.85 13.32 4.85 11.25c0-2.65 2.36-4.7 3.9-6.03l.3-.26L10 3.22z"/></svg>
+                            <span className="text-white">{currentProfile.matchCount}</span>
+                        </span>
+                    )}
                   </div>
                   <div className="flex flex-col gap-0.5 opacity-90">
                     <p className="text-lg font-medium drop-shadow-md">{currentProfile.branch || 'Student'} • {currentProfile.year ? `${currentProfile.year} Year` : 'Student'}</p>
@@ -299,7 +335,7 @@ const Home = () => {
               </button>
               
               {/* Like (Heart) */}
-              <button onClick={() => handleSwipe('like')} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
+              <button onClick={() => handleSwipe('right')} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
                 <span className="material-symbols-outlined fill text-3xl">favorite</span>
               </button>
               
@@ -333,6 +369,9 @@ const Home = () => {
                             </div>
                             <div>
                                 <h2 className="text-xl font-bold text-neutral-900 dark:text-white leading-tight">{currentProfile.name}</h2>
+                                {typeof currentProfile.matchCount === 'number' && (
+                                  <p className="text-xs text-neutral-500">Matches: <span className="font-semibold text-primary">{currentProfile.matchCount}</span></p>
+                                )}
                                 <p className="text-xs font-bold text-primary uppercase tracking-wider">{currentProfile.branch} • {currentProfile.year ? getYearLabel(currentProfile.year) : ''}</p>
                             </div>
                         </div>
@@ -406,6 +445,20 @@ const Home = () => {
                 </div>
             </div>
         )}
+
+          {/* Premium Prompt Modal */}
+          {showPremiumPrompt && (
+            <div className="fixed inset-0 z-60 bg-black/60 backdrop-blur-sm flex items-center justify-center px-4">
+              <div className="w-full max-w-md bg-white dark:bg-zinc-900 rounded-xl p-6 text-center">
+                <h3 className="text-xl font-bold mb-2">Upgrade Required</h3>
+                <p className="text-sm text-neutral-600 dark:text-neutral-300 mb-4">You've reached the free swipe limit. Upgrade to Premier to keep swiping and discover more profiles.</p>
+                <div className="flex gap-3 justify-center">
+                  <button onClick={() => setShowPremiumPrompt(false)} className="px-4 py-2 rounded-full border">Close</button>
+                  <Link to="/premium" className="px-4 py-2 rounded-full bg-primary text-white">Get Premier</Link>
+                </div>
+              </div>
+            </div>
+          )}
       
       <BottomNavbar /> 
     </div>

@@ -11,6 +11,8 @@ import EditProfile from './pages/EditProfile';
 import Privacy from './pages/Privacy';
 import './App.css';
 import Terms from './pages/Terms';
+import PremiumFeatures from './pages/PremiumFeatures';
+import Connections from './pages/Connections';
 
 function App() {
   return (
@@ -25,7 +27,9 @@ function App() {
         <Route path="/likes" element={<Likes />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:roomId" element={<ChatRoom />} />
+        <Route path="/premium" element={<PremiumFeatures />} />
         <Route path='/terms' element={<Terms/>}/>
+        <Route path='/connections' element={<Connections/>}/>
       </Routes>
     </BrowserRouter>
   );

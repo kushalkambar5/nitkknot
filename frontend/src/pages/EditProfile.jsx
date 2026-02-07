@@ -42,8 +42,12 @@ const EditProfile = () => {
                  if (Array.isArray(user.interests)) setInterests(user.interests);
                  else if (user.interests) setInterests(user.interests.split(','));
                  
-                 setGreenFlags(user.greenFlags || '');
-                 setRedFlags(user.redFlags || '');
+                 // Handle flags - convert array to comma-separated string for Textarea editing
+                 if (Array.isArray(user.greenFlags)) setGreenFlags(user.greenFlags.join(', '));
+                 else setGreenFlags(user.greenFlags || '');
+
+                 if (Array.isArray(user.redFlags)) setRedFlags(user.redFlags.join(', '));
+                 else setRedFlags(user.redFlags || '');
 
                  // Initialize photos
                  if (user.profilePics && user.profilePics.length > 0) {

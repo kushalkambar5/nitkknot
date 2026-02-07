@@ -55,6 +55,8 @@ const Login = () => {
             if (data.success) {
                 // Save token
                 localStorage.setItem('token', data.token);
+                // Ensure global logged-in style is applied in this tab
+                try { document.body.classList.add('logged-in'); } catch (e) {}
                 // Redirect
                 navigate('/');
             } else {

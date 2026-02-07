@@ -25,6 +25,13 @@ export const updateProfile = (formData) =>
     headers: { "Content-Type": "multipart/form-data" },
   });
 export const logout = () => api.post("/auth/logout");
+export const upgradeToPremium = () => api.post("/auth/upgrade");
+export const getSwipeHistory = () => {
+  const token = localStorage.getItem("token");
+  return api.get("/history", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+};
 
 const userService = {
   signupSendOtp,
@@ -38,6 +45,8 @@ const userService = {
   createLike,
   updateProfile,
   logout,
+  upgradeToPremium,
+  getSwipeHistory,
 };
 
 export default userService;

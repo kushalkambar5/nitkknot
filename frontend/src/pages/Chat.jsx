@@ -108,10 +108,11 @@ const Chat = () => {
                      <p className="text-white/60 text-lg mb-10 max-w-xs leading-relaxed">
                         This feature is for Premium members only.
                      </p>
-                     
+                     <Link to="/premium">
                      <button className="bg-linear-to-r from-amber-400 to-orange-500 text-white text-lg font-bold px-10 py-4 rounded-full shadow-[0_4px_20px_rgba(251,191,36,0.4)] hover:shadow-[0_6px_25px_rgba(251,191,36,0.5)] transform hover:scale-105 transition-all duration-300 active:scale-95">
                         Upgrade to Gold
                      </button>
+                     </Link>
                 </main>
                 <BottomNavbar /> 
             </div>
@@ -121,7 +122,7 @@ const Chat = () => {
     return (
         <div className="bg-background-light dark:bg-background-dark min-h-screen pb-24 text-[#1b0d16] dark:text-white font-display">
             {/* Header */}
-            <header className="sticky top-0 z-20 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-4 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
+            <header className="sticky top-0 z-20 bg-pink/80 dark:bg-background-dark/80 backdrop-blur-md px-4 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-3xl font-bold tracking-tight text-[#1b0d16] dark:text-white">Messages</h1>
                     <div className="bg-primary/10 p-2 rounded-full">
