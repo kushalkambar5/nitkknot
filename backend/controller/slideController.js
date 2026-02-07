@@ -11,6 +11,7 @@ export const sendSlideData = handleAsyncError(async (req, res, next) => {
     ...currentUser.rightSwipes,
     ...currentUser.leftSwipes,
     ...currentUser.matches,
+    ...currentUser.likes,
   ];
 
   // Filter based on gender preference
@@ -64,10 +65,7 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
   // Using $addToSet logic via Mongoose array methods or direct update
   // Since we might need to modify 'matches', let's stick to document instance save or findOneAndUpdate
 
-  if (!currentUser.rightSwipes.includes(targetUserId)) {
-    currentUser.rightSwipes.push(targetUserId);
-  } else {
-    // Already swiped right?
+  if (currentUser.rightSwipes.includes(targetUserId)) {
     return res
       .status(200)
       .json({ success: true, message: "Already swiped right" });
@@ -122,6 +120,11 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
     $addToSet: { rightSwipes: targetUserId },
   });
 
+  // NEW: Add to targetUser's rightSwipesReceived
+  await User.findByIdAndUpdate(targetUserId, {
+    $addToSet: { rightSwipesReceived: currentUser._id },
+  });
+
   res.status(200).json({
     success: true,
     match: isMatch,
@@ -171,6 +174,11 @@ export const like = handleAsyncError(async (req, res, next) => {
   // Add to 'likes' array
   await User.findByIdAndUpdate(currentUser._id, {
     $addToSet: { likes: targetUserId },
+  });
+
+  // Add to target's 'likesReceived' array
+  await User.findByIdAndUpdate(targetUserId, {
+    $addToSet: { likesReceived: currentUser._id },
   });
 
   res.status(200).json({

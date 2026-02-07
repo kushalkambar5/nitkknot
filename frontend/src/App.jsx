@@ -10,6 +10,7 @@ import ChatRoom from './pages/ChatRoom';
 import EditProfile from './pages/EditProfile';
 import Privacy from './pages/Privacy';
 import './App.css';
+import Terms from './pages/Terms';
 
 function App() {
   return (
@@ -24,6 +25,7 @@ function App() {
         <Route path="/likes" element={<Likes />} />
         <Route path="/chat" element={<Chat />} />
         <Route path="/chat/:roomId" element={<ChatRoom />} />
+        <Route path='/terms' element={<Terms/>}/>
       </Routes>
     </BrowserRouter>
   );

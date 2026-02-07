@@ -2,97 +2,225 @@ import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomNavbar from '../components/BottomNavbar';
 import { getMyChatRooms } from '../services/chatRoomService';
+import { getMyProfile } from '../services/userService';
 
 const Chat = () => {
     const [rooms, setRooms] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [isPremium, setIsPremium] = useState(null); // null = checking
     const [error, setError] = useState('');
+    const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchRooms = async () => {
+        const checkAccessAndFetch = async () => {
             try {
-                const response = await getMyChatRooms();
-                if (response.data.success) {
-                    setRooms(response.data.chatRooms || []);
+                // 1. Check Profile for Premium Status
+                const profileRes = await getMyProfile();
+                const user = profileRes.data.user || profileRes.data;
+                
+                if (!user.isPremium) {
+                    setIsPremium(false);
+                    setLoading(false);
+                    return; // Stop here
+                }
+
+                setIsPremium(true);
+
+                // 2. Fetch Chats if Premium
+                const chatRes = await getMyChatRooms();
+                if (chatRes.data.success) {
+                    setRooms(chatRes.data.chatRooms || []);
                 } else {
                     setError('Failed to load chats');
                 }
+
             } catch (err) {
                 console.error(err);
-                if (err.response && err.response.status === 403) {
-                    setError('Chat is a Premium feature.');
+                // Handle 403 explicitly if api call fails
+                if (err.response && (err.response.status === 403 || err.response.status === 401)) {
+                     // Could be auth issue or premium issue
+                     if (err.response.status === 403) setIsPremium(false);
+                     else setError('Please login again');
                 } else {
-                    setError('Failed to load chats.');
+                    setError('Failed to load data.');
                 }
             } finally {
                 setLoading(false);
             }
         };
 
-        fetchRooms();
+        checkAccessAndFetch();
     }, []);
 
+    // Helper to format time relative
+    const formatTime = (dateString) => {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        const now = new Date();
+        const diff = now - date;
+        
+        if (diff < 60000) return 'Just now';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
+        if (date.toDateString() === now.toDateString()) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        }
+        const yesterday = new Date(now);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        }
+        return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+    };
+
+    const getParticipantDetails = (room) => {
+        const myId = localStorage.getItem('userId');
+        if (!room.participants || room.participants.length === 0) {
+            return { name: 'Unknown', pic: null };
+        }
+        const other = room.participants.find(p => p._id !== myId) || room.participants[0];
+        return {
+            name: other.name || 'User',
+            pic: (other.profilePics && other.profilePics.length > 0) ? other.profilePics[0] : null,
+        };
+    };
+
+    const filteredRooms = rooms.filter(room => {
+        const { name } = getParticipantDetails(room);
+        return name.toLowerCase().includes(searchQuery.toLowerCase());
+    });
+
+    // ==================== PREMIUM LOCK VIEW ====================
+    if (isPremium === false) {
+        return (
+            <div className="bg-[#1a0b14] min-h-screen flex flex-col font-display relative overflow-hidden">
+                <header className="p-6 relative z-10">
+                     <h1 className="text-3xl font-bold tracking-tight text-white mb-1">Messages</h1>
+                </header>
+                
+                <main className="flex-1 flex flex-col items-center justify-center text-center p-8 relative z-10">
+                     {/* Crown Icon */}
+                     <div className="mb-6 animate-bounce-slow">
+                        <span className="text-6xl">👑</span>
+                     </div>
+                     
+                     <h2 className="text-3xl font-bold text-white mb-3">Premium Feature</h2>
+                     <p className="text-white/60 text-lg mb-10 max-w-xs leading-relaxed">
+                        This feature is for Premium members only.
+                     </p>
+                     
+                     <button className="bg-linear-to-r from-amber-400 to-orange-500 text-white text-lg font-bold px-10 py-4 rounded-full shadow-[0_4px_20px_rgba(251,191,36,0.4)] hover:shadow-[0_6px_25px_rgba(251,191,36,0.5)] transform hover:scale-105 transition-all duration-300 active:scale-95">
+                        Upgrade to Gold
+                     </button>
+                </main>
+                <BottomNavbar /> 
+            </div>
+        );
+    }
+
     return (
-        <div className="bg-background-light dark:bg-background-dark min-h-screen pb-20 text-neutral-900 dark:text-white font-display">
-            <header className="p-6 border-b border-gray-100 dark:border-white/5">
-                <h1 className="text-2xl font-bold">Messages</h1>
+        <div className="bg-background-light dark:bg-background-dark min-h-screen pb-24 text-[#1b0d16] dark:text-white font-display">
+            {/* Header */}
+            <header className="sticky top-0 z-20 bg-white/80 dark:bg-background-dark/80 backdrop-blur-md px-4 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
+                <div className="flex items-center justify-between mb-4">
+                    <h1 className="text-3xl font-bold tracking-tight text-[#1b0d16] dark:text-white">Messages</h1>
+                    <div className="bg-primary/10 p-2 rounded-full">
+                        <span className="material-symbols-outlined text-primary text-2xl">favorite</span>
+                    </div>
+                </div>
+                
+                {/* Search Bar */}
+                <div className="relative">
+                    <label className="flex flex-col min-w-40 h-11 w-full relative">
+                        <div className="absolute left-4 top-0 bottom-0 flex items-center justify-center text-gray-400 pointer-events-none">
+                             <span className="material-symbols-outlined text-[20px]">search</span>
+                        </div>
+                        <input 
+                            className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-full text-[#1b0d16] dark:text-white focus:outline-0 focus:ring-2 focus:ring-primary/20 border-none bg-gray-100 dark:bg-white/10 h-full placeholder:text-gray-500 pl-11 pr-4 text-base font-normal leading-normal transition-all" 
+                            placeholder="Search matches" 
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                        />
+                    </label>
+                </div>
             </header>
 
-            <main className="p-4">
+            <main className="flex-1 px-4 mt-2">
                 {loading ? (
-                    <div className="flex justify-center pt-20">
-                         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                     <div className="space-y-4 pt-2">
+                        {[1, 2, 3].map(i => (
+                            <div key={i} className="flex items-center gap-4 py-2 animate-pulse">
+                                <div className="h-16 w-16 rounded-full bg-gray-200 dark:bg-white/5"></div>
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-4 w-1/3 bg-gray-200 dark:bg-white/5 rounded"></div>
+                                    <div className="h-3 w-3/4 bg-gray-200 dark:bg-white/5 rounded"></div>
+                                </div>
+                            </div>
+                        ))}
                     </div>
-                ) : error ? (
-                    <div className="text-center pt-20 px-8">
-                        <div className="mb-4 text-4xl">💎</div>
-                        <h2 className="text-xl font-bold mb-2">Premium Feature</h2>
-                        <p className="text-neutral-500 mb-6">{error}</p>
-                        <button className="bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition-all">
-                            Unlock Chat
-                        </button>
-                    </div>
-                ) : rooms.length === 0 ? (
-                    <div className="text-center pt-20">
-                        <span className="material-symbols-outlined text-6xl text-neutral-200 mb-4">chat_bubble_outline</span>
-                        <p className="text-neutral-500">No matches yet.</p>
-                        <p className="text-sm text-neutral-400 mt-2">Start swiping to find your match!</p>
+                ) : filteredRooms.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center pt-20 text-center opacity-60">
+                         {searchQuery ? (
+                             <>
+                                <span className="material-symbols-outlined text-5xl mb-4">search_off</span>
+                                <p>No matches found for "{searchQuery}"</p>
+                             </>
+                         ) : (
+                             <>
+                                <span className="material-symbols-outlined text-5xl mb-4">chat_bubble_outline</span>
+                                <p>No conversations yet.</p>
+                                <p className="text-sm mt-1">Start matching to chat!</p>
+                             </>
+                         )}
                     </div>
                 ) : (
-                    <div className="space-y-2">
-                        {rooms.map((room) => {
-                             // Determine the other user in 1-on-1 chat
-                             // Assuming room has participants array or similar. 
-                             // Let's assume backend populates 'otherUser' or participants. 
-                             // Need to inspect data structure. Usually 'otherUser' is added by controller or we parse 'participants'.
-                             // For now, I'll assume room.otherUser (as is common in these backends) or try to find it.
-                             // Fallback to "Match".
-                             const otherUser = room.participants?.find(p => p._id !== localStorage.getItem('userId')) || room.participants?.[0] || { name: 'User' };
-                             // But wait, finding by ID relies on knowing my ID. `getMyProfile` gives it, but I didn't verify if stored.
-                             // Ideally backend `getMyChatRooms` filters this.
-                             // Let's rely on a `name` or `participants` being populated.
-                             // Simpler: Just display the room name if it exists, or the first participant name.
-                             
-                             // Actually, let's look at a safer rendering strategy:
-                             const displayName = room.name || (room.participants ? room.participants.map(p => p.name).join(', ') : 'Chat');
-                             const displayPic = room.participants?.[0]?.profilePics?.[0] || 'https://via.placeholder.com/100';
+                    <div className="flex flex-col divide-y divide-gray-100 dark:divide-white/5">
+                        {filteredRooms.map((room) => {
+                            const { name, pic } = getParticipantDetails(room);
+                            const lastMessage = room.lastMessage?.content || 'Start the conversation...';
+                            const time = formatTime(room.lastMessage?.createdAt);
+                            const isUnread = false; 
 
-                             return (
-                                <Link key={room._id} to={`/chat/${room._id}`} className="flex items-center gap-4 p-4 bg-white dark:bg-white/5 rounded-2xl border border-transparent hover:border-gray-100 dark:hover:border-white/10 transition-colors">
-                                    <img src={displayPic} alt="User" className="w-14 h-14 rounded-full object-cover" />
-                                    <div className="flex-1 min-w-0">
-                                        <h3 className="font-bold text-neutral-900 dark:text-white truncate">{displayName}</h3>
-                                        <p className="text-sm text-neutral-500 truncate">{room.lastMessage?.content || 'Start the conversation...'}</p>
+                            return (
+                                <Link 
+                                    key={room._id} 
+                                    to={`/chat/${room._id}`}
+                                    className="flex items-center gap-4 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98] -mx-2 px-2 rounded-xl"
+                                >
+                                    <div className="relative shrink-0">
+                                        <div 
+                                            className="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-16 w-16 border-2 border-primary/10 dark:border-white/10 bg-gray-200" 
+                                            style={{ backgroundImage: pic ? `url('${pic}')` : undefined }}
+                                        >
+                                            {!pic && (
+                                                <div className="w-full h-full flex items-center justify-center text-gray-400">
+                                                    <span className="material-symbols-outlined">person</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-neutral-400 whitespace-nowrap">
-                                        {room.lastMessage ? new Date(room.lastMessage.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}
+                                    
+                                    <div className="flex flex-col flex-1 justify-center min-w-0">
+                                        <div className="flex justify-between items-center mb-0.5">
+                                            <p className="text-gray-900 dark:text-white text-[17px] font-bold leading-normal truncate pr-2">{name}</p>
+                                            <p className={`text-xs font-semibold leading-normal whitespace-nowrap ${isUnread ? 'text-primary' : 'text-gray-400'}`}>{time}</p>
+                                        </div>
+                                        <div className="flex justify-between items-center">
+                                            <p className={`text-sm font-medium leading-normal line-clamp-1 truncate ${isUnread ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'}`}>
+                                                {lastMessage}
+                                            </p>
+                                            {isUnread && (
+                                                <div className="size-2.5 rounded-full bg-primary ml-2 shrink-0"></div>
+                                            )}
+                                        </div>
                                     </div>
                                 </Link>
-                             );
+                            );
                         })}
                     </div>
                 )}
+                
+                <div className="h-24"></div>
             </main>
 
             <BottomNavbar />

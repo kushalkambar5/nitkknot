@@ -212,7 +212,7 @@ const Home = () => {
             <div className="relative w-full flex-1 rounded-xl overflow-hidden shadow-xl bg-white dark:bg-zinc-900 flex flex-col">
               
               {/* Image Container */}
-              <div className="relative h-[70%] w-full overflow-hidden bg-gray-200 cursor-pointer" onClick={nextImage}>
+              <div className="relative flex-[3] w-full overflow-hidden bg-gray-200 cursor-pointer" onClick={nextImage}>
                 {currentProfile.profilePics && currentProfile.profilePics.length > 0 && currentProfile.profilePics[currentImageIndex] ? (
                     <img 
                         className="absolute inset-0 h-full w-full object-cover transition-opacity duration-300" 
@@ -234,23 +234,24 @@ const Home = () => {
                 {currentProfile.profilePics && currentProfile.profilePics.length > 1 && (
                     <div className="absolute top-4 left-0 right-0 px-4 flex gap-1.5 z-20">
                     {currentProfile.profilePics.map((_, idx) => (
-                        <div key={idx} className={`h-1 flex-1 rounded-full ${idx === currentImageIndex ? 'bg-white' : 'bg-white/40'}`}></div>
+                        <div key={idx} className={`h-1 flex-1 rounded-full shadow-sm transition-all duration-300 ${idx === currentImageIndex ? 'bg-white' : 'bg-white/50'}`}></div>
                     ))}
                     </div>
                 )}
                 
-                {/* Overlay Gradient */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent pointer-events-none"></div>
+                {/* Overlay Gradients */}
+                <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-transparent opacity-60 pointer-events-none h-24"></div>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent pointer-events-none"></div>
                 
                 {/* Text Info Overlay */}
-                <div className="absolute bottom-6 left-6 right-6 text-white pointer-events-none">
+                <div className="absolute bottom-6 left-6 right-6 text-white pointer-events-none z-20">
                   <div className="flex items-center gap-2 mb-1">
-                    <h2 className="text-3xl font-bold">{currentProfile.name}, {currentProfile.year}</h2>
-                    <span className="material-symbols-outlined text-blue-400 fill text-xl">verified</span>
+                    <h2 className="text-3xl font-bold drop-shadow-md">{currentProfile.name}, {currentProfile.year}</h2>
+                    <span className="material-symbols-outlined text-blue-400 fill text-xl drop-shadow-md">verified</span>
                   </div>
                   <div className="flex flex-col gap-0.5 opacity-90">
-                    <p className="text-lg font-medium">{currentProfile.branch || 'Student'} • {currentProfile.year ? `${currentProfile.year} Year` : 'Student'}</p>
-                    <div className="flex items-center gap-1 text-sm">
+                    <p className="text-lg font-medium drop-shadow-md">{currentProfile.branch || 'Student'} • {currentProfile.year ? `${currentProfile.year} Year` : 'Student'}</p>
+                    <div className="flex items-center gap-1 text-sm drop-shadow-md">
                       <span className="material-symbols-outlined text-sm">location_on</span>
                       <span>NITK Campus</span>
                     </div>

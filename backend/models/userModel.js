@@ -89,8 +89,20 @@ const UserSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    likesReceived: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     rightSwipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    rightSwipesReceived: [
+      {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "User",
+      },
+    ],
 
     leftSwipes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
 

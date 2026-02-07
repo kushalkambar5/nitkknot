@@ -295,10 +295,12 @@ export const showProfile = handleAsyncError(async (req, res, next) => {
 // Show My Profile
 export const showMyProfile = handleAsyncError(async (req, res, next) => {
   const user = await User.findById(req.user.id);
-  const likesReceivedCount = await User.countDocuments({ likes: req.user.id });
+  // const likesReceivedCount = await User.countDocuments({ likes: req.user.id });
 
   const userObj = user.toObject();
-  userObj.likesReceivedCount = likesReceivedCount;
+  userObj.likesReceivedCount = user.likesReceived
+    ? user.likesReceived.length
+    : 0;
 
   res.status(200).json({
     success: true,
@@ -345,6 +347,11 @@ export const createLike = handleAsyncError(async (req, res, next) => {
     { $addToSet: { likes: targetUserId } },
     { new: true },
   );
+
+  // NEW: Add to targetUser's likesReceived
+  await User.findByIdAndUpdate(targetUserId, {
+    $addToSet: { likesReceived: req.user.id },
+  });
 
   res.status(200).json({
     success: true,

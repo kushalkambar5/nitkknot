@@ -3,11 +3,12 @@ import { Link } from 'react-router-dom';
 
 const Header = () => {
   return (
-    <header className="flex items-center bg-white/80 dark:bg-background-dark/80 backdrop-blur-md sticky top-0 z-50 p-4 justify-between border-b border-rose-100 dark:border-gray-800">
-      <div className="text-primary flex size-10 shrink-0 items-center justify-center bg-primary/10 rounded-full">
-        <span className="material-symbols-outlined text-2xl fill-icon">favorite</span>
+    <header className="flex items-center bg-white/90 dark:bg-background-dark/90 backdrop-blur-lg sticky top-0 z-50 px-6 py-4 justify-between border-b border-gray-200 dark:border-white/10 shadow-sm">
+      <div className="text-primary flex size-12 shrink-0 items-center justify-center bg-primary/12 hover:bg-primary/18 rounded-full transition-colors">
+        <span className="material-symbols-outlined text-2xl fill">favorite</span>
       </div>
-      <h2 className="text-[#1a1518] dark:text-white text-lg font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10">NITKnot</h2>
+      <h2 className="text-[#1b0d16] dark:text-white text-2xl font-bold leading-tight tracking-tight flex-1 text-center pr-12">NITKnot</h2>
+      <div className="w-12"></div>
     </header>
   );
 };

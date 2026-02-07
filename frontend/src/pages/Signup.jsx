@@ -10,6 +10,7 @@ const Signup = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
+    const [termsAccepted, setTermsAccepted] = useState(false);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -55,12 +56,28 @@ const Signup = () => {
         setStep(4);
     };
 
-    // Step 4: File Upload & Send OTP
-    const handleSendOtp = async () => {
+    // Step 4: File Upload Validation
+    const handleStep4 = () => {
         if (files.length === 0) {
             setError('Please upload at least one profile picture');
             return;
         }
+        setError('');
+        setStep(5);
+    };
+
+    // Step 5: Terms & Conditions Acceptance
+    const handleStep5 = () => {
+        if (!termsAccepted) {
+            setError('Please accept the Terms & Conditions to continue');
+            return;
+        }
+        setError('');
+        handleSendOtp();
+    };
+
+    // Step 6: File Upload & Send OTP
+    const handleSendOtp = async () => {
 
         setIsLoading(true);
         setError('');
@@ -154,16 +171,16 @@ const Signup = () => {
                 )}
                 
                 <h2 className="text-lg font-bold leading-tight flex-1 text-center pr-10">
-                    {step === 5 ? 'Verify Email' : 'Create Profile'}
+                    {step === 6 ? 'Verify Email' : 'Create Profile'}
                 </h2>
             </header>
 
             <main className="flex-1 flex flex-col px-6 pt-6 max-w-md mx-auto w-full pb-10">
                 
                 {/* Progress Bar (Hidden for OTP) */}
-                {step < 5 && (
+                {step < 6 && (
                     <div className="flex gap-2 mb-8">
-                        {[1, 2, 3, 4].map(i => (
+                        {[1, 2, 3, 4, 5].map(i => (
                             <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? 'bg-primary' : 'bg-neutral-200 dark:bg-neutral-800'}`}></div>
                         ))}
                     </div>
@@ -285,12 +302,63 @@ const Signup = () => {
                             ))}
                         </div>
 
-                        <Button onClick={handleSendOtp} disabled={isLoading}>{isLoading ? 'Uploading...' : 'Send OTP'}</Button>
+                        <Button onClick={handleStep4}>{isLoading ? 'Loading...' : 'Next'}</Button>
                     </div>
                 )}
 
-                {/* Step 5: OTP */}
+                {/* Step 5: Terms & Conditions */}
                 {step === 5 && (
+                    <div className="space-y-6 animate-fadeIn">
+                        <h1 className="text-2xl font-bold text-center">Terms & Conditions</h1>
+                        <p className="text-neutral-500 text-center text-sm">Please review and accept our Terms & Conditions</p>
+
+                        <div className="bg-neutral-50 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-2xl p-6 h-64 overflow-y-auto">
+                            <div className="text-sm text-neutral-700 dark:text-neutral-300 space-y-4">
+                                <h3 className="font-bold text-neutral-900 dark:text-white">Terms & Conditions</h3>
+                                <p>
+                                    This Platform is a short-term, student-built digital project created exclusively for students of NITK. 
+                                    It is intended to facilitate voluntary social interaction in a controlled and respectful environment.
+                                </p>
+                                <p>
+                                    By accessing or using this Platform, you agree to be bound by these Terms & Conditions, the Privacy Policy, 
+                                    and all applicable laws.
+                                </p>
+                                <p>
+                                    <strong>Key Points:</strong>
+                                    <ul className="list-disc pl-5 mt-2 space-y-1">
+                                        <li>Only users with valid @nitk.edu.in email may register</li>
+                                        <li>Users must be at least 18 years of age</li>
+                                        <li>Each individual may maintain only one account</li>
+                                        <li>All user data may be deleted after the event ends</li>
+                                    </ul>
+                                </p>
+                                <p className="text-xs text-neutral-500">
+                                    <Link to="/terms" className="text-primary hover:underline">Read full Terms & Conditions →</Link>
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center gap-3 p-4 bg-primary/10 dark:bg-primary/20 rounded-xl border border-primary/20">
+                            <input 
+                                type="checkbox" 
+                                id="terms-checkbox"
+                                checked={termsAccepted} 
+                                onChange={(e) => setTermsAccepted(e.target.checked)}
+                                className="w-5 h-5 cursor-pointer accent-primary"
+                            />
+                            <label htmlFor="terms-checkbox" className="text-sm font-medium cursor-pointer flex-1">
+                                I accept the Terms & Conditions and Privacy Policy
+                            </label>
+                        </div>
+
+                        <Button onClick={handleStep5} disabled={!termsAccepted || isLoading}>
+                            {isLoading ? 'Sending OTP...' : 'Continue to OTP'}
+                        </Button>
+                    </div>
+                )}
+
+                {/* Step 6: OTP */}
+                {step === 6 && (
                     <div className="space-y-6 animate-fadeIn">
                         <div className="text-center">
                             <h1 className="text-2xl font-bold mb-2">Check your inbox</h1>
