@@ -15,7 +15,7 @@ const app = express();
 
 // ==================== Middleware ====================
 app.use(helmet());
-app.use(cors()); // Allow all origins for MVP. For production, specify origin.
+app.use(cors({ origin: process.env.FRONTEND_URL || "*" })); // Allow all origins for MVP. For production, specify origin.
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
