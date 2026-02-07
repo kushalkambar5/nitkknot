@@ -169,7 +169,7 @@ const EditProfile = () => {
                 <div className="grid grid-cols-3 gap-2">
                     {/* Render Existing/New Photos */}
                     {photos.map((photo, index) => (
-                        <div key={photo.id} className="relative aspect-[3/4] rounded-xl overflow-hidden group border-2 border-primary/20">
+                        <div key={photo.id} className="aspect-3/4 rounded-2xl overflow-hidden mb-4 relative group border-2 border-primary/20">
                              <img src={photo.url} alt="profile" className="w-full h-full object-cover" />
                              <button onClick={() => removePhoto(photo.id)} className="absolute bottom-2 right-2 bg-primary text-white rounded-full p-1 shadow-lg">
                                  <span className="material-symbols-outlined text-sm leading-none block">close</span>
@@ -182,7 +182,7 @@ const EditProfile = () => {
 
                     {/* Add Slot (if < 6) */}
                     {photos.length < 6 && (
-                        <label className="relative aspect-[3/4] border-2 border-dashed border-primary/30 rounded-xl flex items-center justify-center bg-primary/5 cursor-pointer hover:bg-primary/10 transition">
+                        <label className="aspect-3/4 rounded-2xl overflow-hidden border-2 border-dashed border-gray-700 bg-gray-800/50 flex flex-col items-center justify-center text-gray-500 hover:text-white hover:border-gray-500 hover:bg-gray-800 transition-colors cursor-pointer relative group">
                             <div className="bg-primary text-white rounded-full size-8 flex items-center justify-center shadow-md">
                                 <span className="material-symbols-outlined text-xl">add</span>
                             </div>
@@ -192,7 +192,7 @@ const EditProfile = () => {
                     
                     {/* Fill remaining empty slots purely visual if needed, or just let valid slots exist */}
                     {[...Array(Math.max(0, 5 - photos.length))].map((_, i) => (
-                         <div key={i} className="relative aspect-[3/4] border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-white/5 opacity-50 pointer-events-none">
+                         <div key={i} className="relative aspect-3/4 border-2 border-dashed border-gray-300 dark:border-white/10 rounded-xl flex items-center justify-center bg-gray-50 dark:bg-white/5 opacity-50 pointer-events-none">
                              <div className="bg-gray-400/20 text-gray-400 rounded-full size-8 flex items-center justify-center">
                                  <span className="material-symbols-outlined text-xl">add</span>
                              </div>
@@ -316,7 +316,7 @@ const EditProfile = () => {
             </div>
 
             {/* Save Button */}
-            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] p-4 bg-gradient-to-t from-background-light dark:from-background-dark via-background-light/80 to-transparent z-50">
+            <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] p-4 bg-linear-to-t from-background-light dark:from-background-dark via-background-light/80 to-transparent z-50">
                  <button onClick={handleSave} disabled={loading} className="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-full shadow-lg shadow-primary/20 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-2">
                     {loading ? (
                          <span className="material-symbols-outlined animate-spin">progress_activity</span>

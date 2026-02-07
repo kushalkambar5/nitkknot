@@ -9,7 +9,7 @@ const Privacy = () => {
     return (
         <div className="min-h-screen bg-background-light dark:bg-background-dark text-gray-900 dark:text-white font-display flex flex-col">
             <Header />
-            <main className="flex-grow container mx-auto px-4 py-8 md:py-12 max-w-4xl">
+            <main className="grow container mx-auto px-4 py-8 md:py-12 max-w-4xl">
                  <div className="bg-white dark:bg-zinc-900/50 backdrop-blur-md rounded-3xl shadow-xl overflow-hidden border border-neutral-100 dark:border-white/5">
                     {/* Header Section */}
                     <div className="bg-primary/5 dark:bg-primary/10 p-6 md:p-10 border-b border-neutral-100 dark:border-white/5">
