@@ -41,13 +41,14 @@ const UserSchema = new mongoose.Schema(
         "META",
         "MIN",
         "CHEM",
+        "OTHER",
       ],
       required: true,
     },
 
     year: {
       type: Number,
-      enum: [1, 2, 3, 4],
+      enum: [1, 2, 3, 4, 5, 6, 7],
       required: true,
     },
 
@@ -116,7 +117,7 @@ const UserSchema = new mongoose.Schema(
 
     isPremium: {
       type: Boolean,
-      default: false,
+      default: true,
     },
 
     reportsMade: [

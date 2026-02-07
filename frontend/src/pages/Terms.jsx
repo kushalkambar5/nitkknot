@@ -65,7 +65,7 @@ const Terms = () => {
                 outcomes.
               </p>
             </section>
-
+            {/*
             <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
                     <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">3</span>
@@ -86,7 +86,7 @@ const Terms = () => {
                 </p>
               </div>
             </section>
-
+                
             <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
                     <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">4</span>
@@ -99,10 +99,10 @@ const Terms = () => {
                 <span className="font-semibold text-red-500 mt-2 block">Premium fees are non-refundable and valid only during the event.</span>
               </p>
             </section>
-
+*/}
             <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">5</span>
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">3</span>
                     <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Matching & Communication</h2>
                 </div>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">
@@ -113,7 +113,7 @@ const Terms = () => {
 
             <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">6</span>
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">4</span>
                     <h2 className="text-xl font-bold text-neutral-900 dark:text-white">User Conduct & Anti-Abuse</h2>
                 </div>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">
@@ -125,7 +125,7 @@ const Terms = () => {
 
              <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">7</span>
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">5</span>
                     <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Data Usage</h2>
                 </div>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">
@@ -136,7 +136,7 @@ const Terms = () => {
 
              <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">8</span>
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">6</span>
                     <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Disclaimer of Warranties</h2>
                 </div>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">
@@ -147,7 +147,7 @@ const Terms = () => {
 
              <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">9</span>
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">7</span>
                     <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Limitation of Liability</h2>
                 </div>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">
@@ -158,7 +158,7 @@ const Terms = () => {
 
              <section className="space-y-4">
                  <div className="flex items-center gap-3 mb-2">
-                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">10</span>
+                    <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 text-primary font-bold text-sm">8</span>
                     <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Account Termination</h2>
                 </div>
               <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">

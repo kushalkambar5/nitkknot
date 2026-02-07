@@ -110,7 +110,7 @@ export const getChatByUserId = handleAsyncError(async (req, res, next) => {
   // Check if they are matched?
   // Ideally we should only allow chat if matched.
   const currentUser = await User.findById(currentUserId);
-  if (!currentUser.matches.includes(userId)) {
+  if (!currentUser.matches.some((match) => match.toString() === userId)) {
     return res
       .status(403)
       .json({ success: false, message: "You are not matched with this user." });

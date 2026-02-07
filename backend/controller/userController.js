@@ -524,7 +524,7 @@ export const updateProfile = handleAsyncError(async (req, res, next) => {
 
   // Helper to parse comma-separated strings to arrays
   const parseArrayField = (field) => {
-    if (!field) return undefined;
+    if (!field) return [];
     if (Array.isArray(field)) return field;
     return field
       .split(",")
@@ -532,9 +532,9 @@ export const updateProfile = handleAsyncError(async (req, res, next) => {
       .filter(Boolean);
   };
 
-  if (interests) user.interests = parseArrayField(interests);
-  if (greenFlags) user.greenFlags = parseArrayField(greenFlags);
-  if (redFlags) user.redFlags = parseArrayField(redFlags);
+  if (interests !== undefined) user.interests = parseArrayField(interests);
+  if (greenFlags !== undefined) user.greenFlags = parseArrayField(greenFlags);
+  if (redFlags !== undefined) user.redFlags = parseArrayField(redFlags);
 
   // Only update profilePics if we have a definitive list (new + existing)
   // If no photos sent (finalProfilePics empty) AND no existingPhotos key was present,

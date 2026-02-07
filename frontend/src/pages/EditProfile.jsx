@@ -144,7 +144,8 @@ const EditProfile = () => {
              navigate('/profile');
         } catch (err) {
              console.error("Update failed", err);
-             alert("Failed to update profile");
+             const msg = err.response?.data?.message || err.message || "Failed to update profile";
+             alert(msg);
         } finally {
              setLoading(false);
         }
@@ -212,7 +213,15 @@ const EditProfile = () => {
                 <div className="grid grid-cols-2 gap-3">
                     <label className="flex flex-col gap-1.5">
                         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1">Branch</span>
-                        <input value={branch} onChange={e => setBranch(e.target.value)} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full h-12 px-5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary focus:border-transparent outline-none transition-all" type="text" />
+                         <div className="relative">
+                            <select value={branch} onChange={e => setBranch(e.target.value)} className="w-full appearance-none bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full h-12 px-5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary outline-none transition-all">
+                                <option value="">Select Branch</option>
+                                {['CSE', 'AI', 'IT', 'ECE', 'EEE', 'MECH', 'CIVIL', 'META', 'MIN', 'CHEM', 'OTHER'].map(b => (
+                                    <option key={b} value={b}>{b}</option>
+                                ))}
+                            </select>
+                            <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
+                        </div>
                     </label>
                     <label className="flex flex-col gap-1.5">
                         <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1">Year</span>
@@ -223,7 +232,9 @@ const EditProfile = () => {
                                 <option value="2">2nd Year</option>
                                 <option value="3">3rd Year</option>
                                 <option value="4">4th Year</option>
-                                <option value="Postgrad">Postgrad</option>
+                                <option value="5">M Tech 1st</option>
+                                <option value="6">M Tech 2nd</option>
+                                <option value="7">PHD</option>
                             </select>
                             <span className="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none">expand_more</span>
                         </div>
@@ -237,10 +248,14 @@ const EditProfile = () => {
                 <div className="flex flex-col gap-1.5">
                     <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1">Gender</span>
                     <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-full gap-1">
-                        {['Male', 'Female', 'Other'].map(g => (
-                            <button key={g} onClick={() => setGender(g)} 
-                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${gender === g ? 'bg-white dark:bg-white/10 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:bg-white/50'}`}>
-                                {g}
+                        {[
+                            { label: 'Male', value: 'MALE' },
+                            { label: 'Female', value: 'FEMALE' },
+                            { label: 'Other', value: 'OTHER' }
+                        ].map(g => (
+                            <button key={g.value} onClick={() => setGender(g.value)} 
+                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${gender === g.value ? 'bg-white dark:bg-white/10 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:bg-white/50'}`}>
+                                {g.label}
                             </button>
                         ))}
                     </div>
@@ -248,10 +263,14 @@ const EditProfile = () => {
                 <div className="flex flex-col gap-1.5">
                     <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1">Interested In</span>
                     <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-full gap-1">
-                         {['Men', 'Women', 'All'].map(i => (
-                            <button key={i} onClick={() => setInterestedIn(i)} 
-                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${interestedIn === i ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}>
-                                {i}
+                         {[
+                             { label: 'Men', value: 'MALE' },
+                             { label: 'Women', value: 'FEMALE' },
+                             { label: 'All', value: 'OTHER' }
+                         ].map(i => (
+                            <button key={i.value} onClick={() => setInterestedIn(i.value)} 
+                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${interestedIn === i.value ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}>
+                                {i.label}
                             </button>
                         ))}
                     </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import userService from '../services/userService';
+import { rightSwipe, leftSwipe } from '../services/slidesService';
 import BottomNavbar from '../components/BottomNavbar';
 
 const Connections = () => {
@@ -11,6 +12,7 @@ const Connections = () => {
     const [isPremium, setIsPremium] = useState(false);
     const [stats, setStats] = useState({ likesCount: 0 });
     const [selectedProfile, setSelectedProfile] = useState(null);
+    const [myMatches, setMyMatches] = useState([]);
 
     useEffect(() => {
         fetchUserData();
@@ -27,6 +29,10 @@ const Connections = () => {
                 setIsPremium(response.data.user.isPremium);
                 // We might want to fetch stats specifically if not available in profile
                 setStats({ likesCount: response.data.user.likesReceived ? response.data.user.likesReceived.length : 0 });
+                // Store my matches (IDs) for quick lookup
+                if (response.data.user.matches) {
+                    setMyMatches(response.data.user.matches.map(m => typeof m === 'object' ? m._id : m));
+                }
             }
         } catch (error) {
             console.error("Failed to fetch user data", error);
@@ -80,6 +86,38 @@ const Connections = () => {
         if (lower.includes('food') || lower.includes('cook')) return 'restaurant';
         if (lower.includes('art') || lower.includes('design')) return 'palette';
         return 'star';
+    };
+
+    const handleRightSwipe = async (e, profileId) => {
+        e.stopPropagation();
+        try {
+            const res = await rightSwipe(profileId);
+            if (res.data.success) {
+                // Check if it was a match
+                if (res.data.match || res.data.message === "It's a Match!") {
+                    // Update local state to show as matched
+                    setMyMatches(prev => [...prev, profileId]);
+                    // Optional: Show match modal or toast
+                    alert("It's a Match!"); 
+                } else {
+                    // Just liked/swiped right (shouldn't happen in requests tab usually as they already right swiped you, so it implies match)
+                    // But if for some reason logic differs:
+                }
+            }
+        } catch (error) {
+            console.error("Right swipe failed", error);
+        }
+    };
+
+    const handleLeftSwipe = async (e, profileId) => {
+        e.stopPropagation();
+        try {
+            await leftSwipe(profileId);
+            // Remove from list
+            setProfiles(prev => prev.filter(p => (p.user ? p.user._id : p._id) !== profileId));
+        } catch (error) {
+            console.error("Left swipe failed", error);
+        }
     };
 
     return (
@@ -227,6 +265,33 @@ const Connections = () => {
                                          <div className="absolute bottom-0 left-0 right-0 bg-linear-to-t from-black/80 to-transparent p-4 pt-10">
                                             <h3 className="text-white font-bold text-lg">{profile.name}</h3>
                                             <p className="text-white/80 text-xs">{profile.branch} • {profile.year} Year</p>
+                                        
+                                            {/* Requests Tab: Action Buttons */}
+                                            {activeTab === 'requests' && (
+                                                <div className="flex items-center gap-3 mt-3">
+                                                    {myMatches.includes(profile._id.toString()) ? (
+                                                        <div className="w-full py-1.5 bg-purple-500/90 backdrop-blur-sm rounded-lg flex items-center justify-center gap-2 text-white shadow-lg">
+                                                            <span className="material-symbols-outlined text-lg">handshake</span>
+                                                            <span className="text-xs font-bold uppercase tracking-wide">Matched</span>
+                                                        </div>
+                                                    ) : (
+                                                        <>
+                                                            <button 
+                                                                onClick={(e) => handleLeftSwipe(e, profile._id)}
+                                                                className="flex-1 py-1.5 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white hover:bg-rose-500 hover:text-white transition-colors border border-white/20"
+                                                            >
+                                                                <span className="material-symbols-outlined text-lg">close</span>
+                                                            </button>
+                                                            <button 
+                                                                onClick={(e) => handleRightSwipe(e, profile._id)}
+                                                                className="flex-1 py-1.5 bg-white/20 backdrop-blur-md rounded-lg flex items-center justify-center text-white hover:bg-emerald-500 hover:text-white transition-colors border border-white/20"
+                                                            >
+                                                                <span className="material-symbols-outlined text-lg">check</span>
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>

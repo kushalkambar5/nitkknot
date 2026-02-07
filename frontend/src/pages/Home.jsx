@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import FeatureCard from '../components/FeatureCard';
 import TrustCard from '../components/TrustCard';
 import BottomNavbar from '../components/BottomNavbar';
-import { getSlides, rightSwipe, leftSwipe, report } from '../services/slidesService';
+import { getSlides, rightSwipe, leftSwipe, report, like } from '../services/slidesService';
 import userService from '../services/userService';
 import logo from '../assets/logo.png';
 
@@ -271,7 +271,7 @@ const Home = () => {
               <main className="flex-1 flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto w-full">
                   <span className="material-symbols-outlined text-6xl text-neutral-300 mb-4">sentiment_dissatisfied</span>
                   <h3 className="text-xl font-bold">No more profiles</h3>
-                  <p className="text-neutral-500 mb-6">Check back later or adjust your filters.</p>
+                  <p className="text-neutral-500 mb-6">Check back later or adjust your "Interested In" filters.</p>
                   <button onClick={fetchProfiles} className="px-6 py-2 bg-primary text-white rounded-full font-bold shadow-lg">Refresh</button>
               </main>
               <BottomNavbar />

@@ -2,6 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+import { Link } from 'react-router-dom';
 
 const Privacy = () => {
     const navigate = useNavigate();
@@ -76,7 +77,7 @@ const Privacy = () => {
                                 <h2 className="text-xl font-bold text-neutral-900 dark:text-white">Contact Us</h2>
                             </div>
                             <p className="text-neutral-600 dark:text-neutral-300 leading-relaxed pl-11">
-                                If you have any questions about this Privacy Policy, please contact us.
+                                If you have any questions about this Privacy Policy, please contact us through <Link to="/Report" className="text-primary font-bold hover:underline">Report</Link>.
                             </p>
                         </section>
                     </div>
