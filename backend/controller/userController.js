@@ -84,7 +84,8 @@ export const sendSignupOtp = handleAsyncError(async (req, res, next) => {
       isVerified: false,
     });
   } else {
-    // User exists but is not verified -> Update OTP and details
+    // User exists but is not verified -> Update OTP and details (Retry Signup)
+    // We allow overwriting because the previous attempt was never verified.
     user.name = name;
     user.branch = branch;
     user.year = year;

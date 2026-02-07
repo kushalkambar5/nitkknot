@@ -169,7 +169,7 @@ const EditProfile = () => {
                 <div className="grid grid-cols-3 gap-2">
                     {/* Render Existing/New Photos */}
                     {photos.map((photo, index) => (
-                        <div key={photo.id} className="relative aspect-[3/4] bg-gray-200 dark:bg-gray-800 rounded-xl overflow-hidden group border-2 border-primary/20">
+                        <div key={photo.id} className="relative aspect-[3/4] rounded-xl overflow-hidden group border-2 border-primary/20">
                              <img src={photo.url} alt="profile" className="w-full h-full object-cover" />
                              <button onClick={() => removePhoto(photo.id)} className="absolute bottom-2 right-2 bg-primary text-white rounded-full p-1 shadow-lg">
                                  <span className="material-symbols-outlined text-sm leading-none block">close</span>

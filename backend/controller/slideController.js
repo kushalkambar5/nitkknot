@@ -17,6 +17,7 @@ export const sendSlideData = handleAsyncError(async (req, res, next) => {
   // Filter based on gender preference
   let filter = {
     _id: { $nin: exclusionIds },
+    isVerified: true, // Only show verified users
   };
 
   // If interestedIn is specific (MALE/FEMALE), filter by that.
@@ -70,22 +71,25 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
     const rightCount = Array.isArray(currentUser.rightSwipes)
       ? currentUser.rightSwipes.length
       : 0;
-    if (rightCount >= SWIPE_LIMIT_FREE) {
+    // Limit: Total 3 swipes for free users
+    if (rightCount >= 3) {
       return res.status(403).json({
         success: false,
-        message: "Upgrade to Premier to swipe more users.",
+        message: "Free limit reached (3 swipes). Upgrade to Premier for more.",
       });
     }
   } else {
-    // Premier users: enforce hourly swipe cap based on timestamps
+    // Premier users: enforce hourly swipe cap (15/hr)
     const timestamps = Array.isArray(currentUser.rightSwipeTimestamps)
       ? currentUser.rightSwipeTimestamps
       : [];
-    const recentCount = timestamps.filter((t) => new Date(t).getTime() > oneHourAgo).length;
-    if (recentCount >= PREMIER_HOURLY_LIMIT) {
+    const recentCount = timestamps.filter(
+      (t) => new Date(t).getTime() > oneHourAgo,
+    ).length;
+    if (recentCount >= 15) {
       return res.status(403).json({
         success: false,
-        message: `Premier hourly swipe limit reached (${PREMIER_HOURLY_LIMIT} per hour).`,
+        message: "Premier hourly swipe limit reached (15 per hour).",
       });
     }
   }
@@ -185,11 +189,12 @@ export const leftSwipe = handleAsyncError(async (req, res, next) => {
   });
 });
 
-// Like (Super Like / Direct Like)
+// Like (Super Like / Direct// Like (acts as Right Swipe but without UI transition usually, or defined by frontend)
 export const like = handleAsyncError(async (req, res, next) => {
   const { id: targetUserId } = req.params;
   const currentUser = req.user;
 
+  // 1. Prevent Self-Like
   if (targetUserId === currentUser.id) {
     return res
       .status(400)
@@ -201,15 +206,54 @@ export const like = handleAsyncError(async (req, res, next) => {
     return res.status(404).json({ success: false, message: "User not found" });
   }
 
-  // Add to 'likes' array
+  // 2. Enforce Limits (Same as Right Swipe)
+  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+  if (!currentUser.isPremium) {
+    const rightCount = Array.isArray(currentUser.rightSwipes)
+      ? currentUser.rightSwipes.length
+      : 0;
+    if (rightCount >= 3) {
+      return res.status(403).json({
+        success: false,
+        message: "Free limit reached (3 swipes). Upgrade to Premier for more.",
+      });
+    }
+  } else {
+    // Premier hourly limit
+    const timestamps = Array.isArray(currentUser.rightSwipeTimestamps)
+      ? currentUser.rightSwipeTimestamps
+      : [];
+    const recentCount = timestamps.filter(
+      (t) => new Date(t).getTime() > oneHourAgo,
+    ).length;
+    if (recentCount >= 15) {
+      return res.status(403).json({
+        success: false,
+        message: "Premier hourly swipe limit reached (15 per hour).",
+      });
+    }
+  }
+
+  // 3. Update Swipe Data (Counts towards limit)
+  // Use addToSet to avoid duplicates if user clicks like multiple times
   await User.findByIdAndUpdate(currentUser._id, {
-    $addToSet: { likes: targetUserId },
+    $addToSet: {
+      likes: targetUserId,
+      rightSwipes: targetUserId,
+    },
+    $push: { rightSwipeTimestamps: new Date() },
   });
 
-  // Add to target's 'likesReceived' array
+  // 4. Update Target
   await User.findByIdAndUpdate(targetUserId, {
     $addToSet: { likesReceived: currentUser._id },
   });
+
+  // 5. check for match logic (Optional, since 'Like' usually implies intent)
+  // For now, consistent with existing 'like' which didn't check match.
+  // But if it counts as right swipe, it SHOULD check match?
+  // User said "dont swipe... only when right swiped".
+  // I'll stick to just recording the like. The match modal won't show on Frontend for "Like" button.
 
   res.status(200).json({
     success: true,

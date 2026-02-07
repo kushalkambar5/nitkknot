@@ -80,26 +80,61 @@ const Home = () => {
     try {
         if (action === 'left') {
             await leftSwipe(currentProfile._id);
+            // Move to next profile
+            setCurrentImageIndex(0);
+            setCurrentProfileIndex(prev => prev + 1);
         } else if (action === 'right') {
             // Attempt right swipe and handle server-side premium gating
             const resp = await rightSwipe(currentProfile._id);
             // If server responded with 403 (premium required) or explicit failure about premium
-            if (resp && (resp.status === 403 || (resp.data && resp.data.success === false && /premium/i.test(resp.data.message)))) {
-              setShowPremiumPrompt(true);
-              return; // do not advance to next profile
+            // Axios throws for 4xx/5xx, so we catch it in the outer block.
+            // If resp.data.success is false and message indicates premium, handle it.
+            if (resp && resp.data && resp.data.success) {
+                if (resp.data.match) {
+                    setMatchUser(resp.data.match);
+                    setShowMatchModal(true);
+                }
+                // Move to next profile
+                setCurrentImageIndex(0);
+                setCurrentProfileIndex(prev => prev + 1);
+            } else if (resp && resp.data && resp.data.success === false && /premium/i.test(resp.data.message)) {
+                setShowPremiumPrompt(true);
+                return; // do not advance to next profile
             }
         } else if (action === 'report') {
             const reason = prompt("Describe the issue with this profile:");
             if (!reason) return;
             await report(currentProfile._id, reason);
             alert("User reported.");
+            // Move to next profile after reporting
+            setCurrentImageIndex(0);
+            setCurrentProfileIndex(prev => prev + 1);
         }
 
-      // Move to next profile
-      setCurrentImageIndex(0);
-      setCurrentProfileIndex(prev => prev + 1);
     } catch (err) {
       console.error('Swipe failed', err);
+      if (err.response && err.response.status === 403) {
+        setShowPremiumPrompt(true);
+      } else {
+        // Optionally, show a generic error or advance anyway to prevent being stuck
+        // For now, we'll just log the error and not advance if it's not a 403.
+        // If the API call truly failed, it's better not to advance the card.
+      }
+    }
+  };
+
+  const handleLike = async () => {
+    if (!currentProfile) return;
+    try {
+        await like(currentProfile._id);
+        // User wants to "like" without swiping the card away.
+        // So, no setCurrentProfileIndex(prev => prev + 1);
+        // Optionally, show a temporary visual feedback like a heart animation on the card.
+        alert("Profile liked!"); // Replace with a better UI feedback
+    } catch (err) {
+        console.error('Like failed', err);
+        // Handle errors, e.g., show a toast notification
+        alert("Failed to like profile.");
     }
   };
 
@@ -132,6 +167,31 @@ const Home = () => {
         return "Student";
   };
 
+  // Touch Event Handlers for Finger Swiping
+  const onTouchStart = (e) => {
+    setTouchEnd(null); // Reset touchEnd on new touch start
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const threshold = 75; // Pixels to consider a swipe
+    
+    if (distance > threshold) { // Swiped left
+      handleSwipe('left');
+    } else if (distance < -threshold) { // Swiped right
+      handleSwipe('right');
+    }
+    // Reset touch states
+    setTouchStart(null);
+    setTouchEnd(null);
+  };
+
   // ==================== GUEST VIEW ====================
   if (!isLoggedIn) {
     return (
@@ -141,7 +201,7 @@ const Home = () => {
           <div className="@[480px]:p-4">
             <div 
               className="flex min-h-[420px] flex-col gap-8 bg-cover bg-center bg-no-repeat @[480px]:rounded-xl items-center justify-center p-8 text-center rounded-2xl relative overflow-hidden shadow-xl" 
-              style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.75) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuAzEJWDtl2wVIuzKOBz9Y7Dk1Du4dabYbHv9JJmT9Xgrdfsdy5WfHMb7oOmnV_UpPVr6rULX9rVud5D_UpzZZMA20Oa6vlFUU9-eP6qh_8ZDQx1kB4If_VWMyRPIKUgX6Ny8ivYpOlHemEvpjDv97EjuB6BPGtu4fBVpB17dBwv2EIXf5256lXyX068rnS0sI9sfKOWXhGztG4F0eCZRFo_6zik0oxeiBhL23BjsUqnT2BvefGM0rWT5oLflCw6R3SVt7faRXDnZuo')" }}
+              style={{ backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0.75) 100%), url('https://lh3.googleusercontent.com/aida-public/AB6AXuAzEJWDtl2wVIuzKOBz9Y7Dk1Du4dabYbHv9JJmT9Xgrdfsdy5WfHMb7oOmnV_UpPVr6rULX9rVud5D_UpZZMA20Oa6vlFUU9-eP6qh_8ZDQx1kB4If_VWMyRPIKUgX6Ny8ivYpOlHemEvpjDv97EjuB6BPGtu4fBVpB17dBwv2EIXf5256lXyX068rnS0sI9sfKOWXhGztG4F0eCZRFo_6zik0oxeiBhL23BjsUqnT2BvefGM0rWT5oLflCw6R3SVt7faRXDnZuo')" }}
             >
               <div className="flex flex-col gap-3 relative z-10">
                 <h1 className="text-white text-5xl font-extrabold leading-tight tracking-[-0.033em] @[480px]:text-6xl">
@@ -242,7 +302,12 @@ const Home = () => {
         {!loading && currentProfile && (
           <>
             {/* Profile Card */}
-            <div className="relative w-full flex-1 rounded-xl overflow-hidden shadow-xl bg-white dark:bg-zinc-900 flex flex-col">
+            <div 
+              className="relative w-full flex-1 rounded-xl overflow-hidden shadow-xl bg-white dark:bg-zinc-900 flex flex-col"
+              onTouchStart={onTouchStart}
+              onTouchMove={onTouchMove}
+              onTouchEnd={onTouchEnd}
+            >
               
               {/* Image Container */}
               <div className="relative flex-[3] w-full overflow-hidden bg-gray-200 cursor-pointer" onClick={nextImage}>
@@ -335,12 +400,12 @@ const Home = () => {
                 <span className="material-symbols-outlined text-2xl">flag</span>
               </button>
               
-              {/* Like (Heart) */}
-              <button onClick={() => handleSwipe('right')} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
+              {/* Like (Heart) - Now calls handleLike and does not swipe */}
+              <button onClick={handleLike} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
                 <span className="material-symbols-outlined fill text-3xl">favorite</span>
               </button>
               
-              {/* Right Arrow (Like/Pass?) */}
+              {/* Right Arrow (Swipe Right) */}
                <button onClick={() => handleSwipe('right')} className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90">
                 <span className="material-symbols-outlined text-2xl">arrow_forward</span>
               </button>
