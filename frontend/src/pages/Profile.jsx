@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import BottomNavbar from '../components/BottomNavbar';
+import BottomNavbar from '../components/bottomNavbar';
 import { getMyProfile, logout as logoutService } from '../services/userService';
 
 const Profile = () => {

@@ -11,7 +11,7 @@ const Connections = () => {
     const [loading, setLoading] = useState(false);
     const [isPremium, setIsPremium] = useState(false);
     const [stats, setStats] = useState({ likesCount: 0 });
-    const [selectedProfile, setSelectedProfile] = useState(null);
+    const [selectedProfile, setSelectedProfile] = useState(null); // { ...profileData, status: 'Left Swiped' } if history
     const [myMatches, setMyMatches] = useState([]);
 
     useEffect(() => {
@@ -120,6 +120,32 @@ const Connections = () => {
         }
     };
 
+    // Helper to undo a left swipe (by liking them) from History
+    const handleUndoLeftSwipe = async (profileId) => {
+        try {
+            // Call rightSwipe (Like)
+            const res = await rightSwipe(profileId);
+            if (res.data.success) {
+                // Remove from the history list (or ideally move to Right Swiped/Matches tab, but for now just remove from current view)
+                setProfiles(prev => prev.filter(p => (p.user ? p.user._id : p._id) !== profileId));
+                setSelectedProfile(null);
+                
+                if (res.data.match || res.data.message === "It's a Match!") {
+                     alert("It's a Match!");
+                     setMyMatches(prev => [...prev, profileId]);
+                } else {
+                     alert("User Liked!");
+                }
+            }
+        } catch (error) {
+            console.error("Undo swipe failed", error);
+            // Handle limits
+             if (error.response && error.response.status === 403) {
+                 alert(error.response.data.message || "Limit reached");
+             }
+        }
+    };
+
     return (
         <div className="bg-background-light dark:bg-background-dark min-h-screen pb-24 text-[#1b0d16] dark:text-white font-display transition-colors duration-300">
             {/* ... Header and Tabs ... */}
@@ -212,7 +238,7 @@ const Connections = () => {
                              return (
                                 <div 
                                     key={profile._id} 
-                                    onClick={() => !shouldBlur() && setSelectedProfile(profile)}
+                                    onClick={() => !shouldBlur() && setSelectedProfile({ ...profile, status })}
                                     className={`group relative overflow-hidden rounded-xl bg-white dark:bg-[#2d1624] p-1 shadow-sm ${!shouldBlur() ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
                                 >
                                     <div className="aspect-3/4 overflow-hidden rounded-lg relative">
@@ -227,7 +253,7 @@ const Connections = () => {
                                         {isHistory && (
                                             <div className={`absolute top-2 right-2 px-2 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider text-white shadow-sm
                                                 ${status === 'Matched' ? 'bg-purple-500' : 
-                                                  status === 'Liked' ? 'bg-pink-500' : 
+                                                  status === 'Right Swiped' ? 'bg-pink-500' : 
                                                   'bg-gray-500'}`}>
                                                 {status}
                                             </div>

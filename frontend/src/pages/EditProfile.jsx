@@ -14,7 +14,7 @@ const EditProfile = () => {
     const [branch, setBranch] = useState('');
     const [year, setYear] = useState('');
     const [gender, setGender] = useState('');
-    const [interestedIn, setInterestedIn] = useState('');
+    // interestedIn removed - strictly derived from gender
     
     // Interests logic
     const [interests, setInterests] = useState([]);
@@ -41,7 +41,7 @@ const EditProfile = () => {
                  setBranch(user.branch || '');
                  setYear(user.year || '');
                  setGender(user.gender || '');
-                 setInterestedIn(user.interestedIn || '');
+                 // setInterestedIn(user.interestedIn || ''); // Removed
                  if (Array.isArray(user.interests)) setInterests(user.interests);
                  else if (user.interests) setInterests(user.interests.split(','));
                  
@@ -117,8 +117,10 @@ const EditProfile = () => {
              formData.append('name', name);
              formData.append('branch', branch);
              formData.append('year', year);
-             formData.append('gender', gender);
-             formData.append('interestedIn', interestedIn);
+             formData.append('year', year);
+             // Gender and InterestedIn are read-only and not sent
+             // formData.append('gender', gender); 
+             // formData.append('interestedIn', interestedIn);
              formData.append('interests', interests.join(',')); // Backend accepts comma separated? Or array? Controller handles both?
              // Checking controller: `if (interests) user.interests = interests;`. Mongoose model?
              // userModel says interests: [String] usually? Or String? 
@@ -244,37 +246,23 @@ const EditProfile = () => {
 
             {/* Identity & Preference */}
             <div className="p-4 flex flex-col gap-4">
-                <h3 className="text-gray-900 dark:text-white text-base font-bold px-1 text-primary">Identity & Preference</h3>
-                <div className="flex flex-col gap-1.5">
-                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1">Gender</span>
-                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-full gap-1">
+                <h3 className="text-gray-900 dark:text-white text-base font-bold px-1 text-primary">Identity</h3>
+                <div className="flex flex-col gap-1.5 opacity-60">
+                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1 border-b border-dashed border-gray-300 w-max mb-1">Gender (Read-only)</span>
+                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-full gap-1 pointer-events-none cursor-not-allowed">
                         {[
                             { label: 'Male', value: 'MALE' },
-                            { label: 'Female', value: 'FEMALE' },
-                            { label: 'Other', value: 'OTHER' }
+                            { label: 'Female', value: 'FEMALE' }
                         ].map(g => (
-                            <button key={g.value} onClick={() => setGender(g.value)} 
-                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${gender === g.value ? 'bg-white dark:bg-white/10 shadow-sm text-gray-900 dark:text-white' : 'text-gray-500 hover:bg-white/50'}`}>
+                            <button key={g.value} 
+                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${gender === g.value ? 'bg-white dark:bg-white/10 shadow-sm text-gray-900 dark:text-white' : 'text-gray-400'}`}>
                                 {g.label}
                             </button>
                         ))}
                     </div>
+                    <p className="text-[10px] text-gray-400 px-2">Gender cannot be changed after signup.</p>
                 </div>
-                <div className="flex flex-col gap-1.5">
-                    <span className="text-sm font-semibold text-gray-600 dark:text-gray-400 px-1">Interested In</span>
-                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-full gap-1">
-                         {[
-                             { label: 'Men', value: 'MALE' },
-                             { label: 'Women', value: 'FEMALE' },
-                             { label: 'All', value: 'OTHER' }
-                         ].map(i => (
-                            <button key={i.value} onClick={() => setInterestedIn(i.value)} 
-                                className={`flex-1 py-2 text-sm font-medium rounded-full transition-all ${interestedIn === i.value ? 'bg-primary text-white shadow-md' : 'text-gray-500 hover:bg-white/50'}`}>
-                                {i.label}
-                            </button>
-                        ))}
-                    </div>
-                </div>
+                {/* Interested In REMOVED */}
             </div>
 
             {/* Interests */}

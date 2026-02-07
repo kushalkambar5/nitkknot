@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
-import { signupSendOtp, signupVerifyOtp } from '../services/userService';
+import { signupSendOtp, signupVerifyOtp, signupComplete } from '../services/userService';
 import '../App.css';
 
 // Preset interests list
@@ -14,6 +14,7 @@ const Signup = () => {
     const [error, setError] = useState('');
     const [otp, setOtp] = useState(['', '', '', '', '', '']);
     const [termsAccepted, setTermsAccepted] = useState(false);
+    const [isEmailVerified, setIsEmailVerified] = useState(false);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -29,101 +30,26 @@ const Signup = () => {
 
     const [files, setFiles] = useState([]);
 
-    // Step 1: Email Validation
-    const handleStep1 = () => {
+    // Step 1: Email Input -> Send OTP
+    const handleStep1 = async () => {
         if (!formData.email.endsWith('@nitk.edu.in')) {
             setError('Please use a valid @nitk.edu.in email');
             return;
         }
         setError('');
-        setStep(2);
-    };
-
-    // Step 2: Basic Info Validation
-    const handleStep2 = () => {
-        if (!formData.name || !formData.branch || !formData.year || !formData.gender) {
-            setError('Please fill in all fields');
-            return;
-        }
-        setError('');
-        setStep(3);
-    };
-
-    // Step 3: Preferences Validation
-    const handleStep3 = () => {
-        if (!formData.interestedIn || !formData.interests || !formData.greenFlags || !formData.redFlags) {
-            setError('Please complete your profile details');
-            return;
-        }
-        setError('');
-        setStep(4);
-    };
-
-    // Step 4: File Upload Validation
-    const handleStep4 = () => {
-        if (files.length === 0) {
-            setError('Please upload at least one profile picture');
-            return;
-        }
-        setError('');
-        setStep(5);
-    };
-
-    // Step 5: Terms & Conditions Acceptance
-    const handleStep5 = async () => {
-        if (!termsAccepted) {
-            setError('Please accept the Terms & Conditions to continue');
-            return;
-        }
-        setError('');
-        console.debug('Handling Step 5: sending OTP for', formData.email);
-        await handleSendOtp();
-    };
-
-    // Step 6: File Upload & Send OTP
-    const handleSendOtp = async () => {
-
         setIsLoading(true);
-        setError('');
-
-        const data = new FormData();
-        Object.keys(formData).forEach(key => {
-            if (['interests', 'greenFlags', 'redFlags'].includes(key)) {
-                // Split by comma and append each for parsing simplicity or rely on comma string
-                // Based on backend analysis, strings are fine, assume backend controller splits using `req.body` logic or String arrays
-                // Let's send comma-separated as the user controller seems to destructure `interests` from body directly.
-                data.append(key, formData[key]);
-            } else {
-                data.append(key, formData[key]); 
-            }
-        });
-
-        // Append files
-        files.forEach((file) => {
-            data.append('profilePics', file);
-        });
 
         try {
-            // Using userService
-            const response = await signupSendOtp(data);
-            console.debug('signupSendOtp response:', response);
-
-            // Accept HTTP 200 or explicit success flag
-            if (response && (response.status === 200 || response.data?.success === true)) {
-                setStep(6); // advance to OTP entry
-            } else {
-                console.error('Unexpected signup response', response?.data);
-                setError(response?.data?.message || 'Signup failed');
-            }
+            await signupSendOtp({ email: formData.email });
+            setStep(2); // Move to OTP
         } catch (err) {
-            setError(err.response?.data?.message || 'Network error. Check console.');
-            console.error(err);
+            setError(err.response?.data?.message || 'Failed to send OTP');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // Step 5: Verify OTP
+    // Step 2: Verify OTP
     const handleVerifyOtp = async () => {
         const otpValue = otp.join('');
         if (otpValue.length !== 6) return setError('Enter 6-digit OTP');
@@ -133,16 +59,80 @@ const Signup = () => {
 
         try {
             const response = await signupVerifyOtp({ email: formData.email, otp: otpValue });
-            const resData = response.data;
-
-            if (resData.success) {
-                localStorage.setItem('token', resData.token);
-                navigate('/');
-            } else {
-                setError(resData.message || 'Invalid OTP');
+            if (response.data.success) {
+                setIsEmailVerified(true);
+                setStep(3); // Move to Details
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Verification failed');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    // Step 3: Basic Info Validation
+    const handleStep3 = () => {
+        if (!formData.name || !formData.branch || !formData.year || !formData.gender) {
+            setError('Please fill in all fields');
+            return;
+        }
+        setError('');
+        setStep(4);
+    };
+
+    // Step 4: Preferences Validation
+    const handleStep4 = () => {
+        if (!formData.interests || !formData.greenFlags || !formData.redFlags) {
+            setError('Please complete your profile details');
+            return;
+        }
+        setError('');
+        setStep(5);
+    };
+
+    // Step 5: File Upload Validation
+    const handleStep5 = () => {
+        if (files.length === 0) {
+            setError('Please upload at least one profile picture');
+            return;
+        }
+        setError('');
+        setStep(6);
+    };
+
+    // Step 6: Terms -> Complete Signup
+    const handleCompleteSignup = async () => {
+        if (!termsAccepted) {
+            setError('Please accept the Terms & Conditions');
+            return;
+        }
+        if (!isEmailVerified) {
+            setError('Email not verified. Please restart.');
+             setStep(1);
+             return;
+        }
+
+        setIsLoading(true);
+        setError('');
+
+        const data = new FormData();
+        Object.keys(formData).forEach(key => {
+             data.append(key, formData[key]);
+        });
+
+        files.forEach((file) => {
+            data.append('profilePics', file);
+        });
+
+        try {
+            const response = await signupComplete(data);
+             if (response.data.success) {
+                localStorage.setItem('token', response.data.token);
+                navigate('/');
+            }
+        } catch (err) {
+            setError(err.response?.data?.message || 'Signup failed');
+             console.error(err);
         } finally {
             setIsLoading(false);
         }
@@ -207,16 +197,18 @@ const Signup = () => {
                 )}
                 
                 <h2 className="text-lg font-bold leading-tight flex-1 text-center pr-10">
-                    {step === 6 ? 'Verify Email' : 'Create Profile'}
+                    {step === 1 ? 'Get Started' :
+                     step === 2 ? 'Verification' :
+                     'Create Profile'}
                 </h2>
             </header>
 
             <main className="flex-1 flex flex-col px-6 pt-6 max-w-md mx-auto w-full pb-10">
                 
-                {/* Progress Bar (Hidden for OTP) */}
-                {step < 6 && (
+                {/* Progress Bar (Visible only for details steps) */}
+                {step > 2 && (
                     <div className="flex gap-2 mb-8">
-                        {[1, 2, 3, 4, 5].map(i => (
+                        {[3, 4, 5, 6].map(i => (
                             <div key={i} className={`h-1.5 flex-1 rounded-full transition-all duration-300 ${i <= step ? 'bg-primary' : 'bg-neutral-200 dark:bg-neutral-800'}`}></div>
                         ))}
                     </div>
@@ -241,12 +233,42 @@ const Signup = () => {
                             />
                         </div>
 
-                        <Button onClick={handleStep1}>Continue</Button>
+                         <Button onClick={handleStep1} disabled={isLoading}>
+                            {isLoading ? 'Sending OTP...' : 'Continue'}
+                        </Button>
                     </div>
                 )}
 
-                {/* Step 2: Basic Details */}
+                {/* Step 2: OTP */}
                 {step === 2 && (
+                    <div className="space-y-6 animate-fadeIn">
+                        <div className="text-center">
+                            <h1 className="text-2xl font-bold mb-2">Check your inbox</h1>
+                            <p className="text-neutral-500">OTP sent to {formData.email}</p>
+                        </div>
+
+                         <div className="flex justify-center gap-2 mb-4">
+                             {otp.map((digit, idx) => (
+                                <div key={idx} className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center border ${digit ? 'border-primary bg-white dark:bg-white/5' : 'border-[#e7cfdd] dark:border-white/20 bg-white dark:bg-white/5'} rounded-xl shadow-sm transition-all`}>
+                                     <input
+                                        id={`otp-${idx}`}
+                                        type="text"
+                                        maxLength="1"
+                                        value={digit}
+                                        onChange={(e) => handleOtpChange(idx, e.target.value)}
+                                        className="w-full h-full text-center text-xl sm:text-2xl font-bold bg-transparent outline-none text-neutral-900 dark:text-white"
+                                     />
+                                </div>
+                             ))}
+                        </div>
+
+                        <Button onClick={handleVerifyOtp} disabled={isLoading}>{isLoading ? 'Verifying...' : 'Verify Email'}</Button>
+                        <button onClick={() => setStep(1)} className="w-full text-center text-sm text-neutral-500 hover:text-primary mt-2">Change Email</button>
+                    </div>
+                )}
+
+                {/* Step 3: Basic Details */}
+                {step === 3 && (
                     <div className="space-y-5 animate-fadeIn">
                         <h1 className="text-2xl font-bold text-center">About You</h1>
                         
@@ -278,28 +300,24 @@ const Signup = () => {
                                 <option value="">Select</option>
                                 <option value="MALE">Male</option>
                                 <option value="FEMALE">Female</option>
-                                <option value="OTHER">Other</option>
                             </select>
+                            <p className="text-[10px] text-neutral-500 ml-1">
+                                <span className="text-red-500">*</span> Gender cannot be changed later.
+                            </p>
                         </div>
 
-                        <Button onClick={handleStep2}>Next</Button>
+                        <Button onClick={handleStep3}>Next</Button>
                     </div>
                 )}
 
-                {/* Step 3: Preferences */}
-                {step === 3 && (
+                {/* Step 4: Preferences */}
+                {step === 4 && (
                      <div className="space-y-5 animate-fadeIn">
                         <h1 className="text-2xl font-bold text-center">Your Vibe</h1>
 
-                         <div className="space-y-2">
-                            <label className="text-sm font-semibold ml-1">Interested In</label>
-                            <select value={formData.interestedIn} onChange={e => setFormData({...formData, interestedIn: e.target.value})} className="input-field">
-                                <option value="">Select</option>
-                                <option value="MALE">Male</option>
-                                <option value="FEMALE">Female</option>
-                                <option value="OTHER">Other</option>
-                            </select>
-                        </div>
+                        <h1 className="text-2xl font-bold text-center">Your Vibe</h1>
+
+                        {/* Interested In REMOVED - Auto-derived from Gender */}
 
                         {/* Interests Section */}
                         <div className="space-y-3">
@@ -369,12 +387,12 @@ const Signup = () => {
                             <input type="text" value={formData.redFlags} onChange={e => setFormData({...formData, redFlags: e.target.value})} placeholder="Ghosting, Ego..." className="input-field" />
                         </div>
 
-                        <Button onClick={handleStep3}>Next</Button>
+                        <Button onClick={handleStep4}>Next</Button>
                      </div>
                 )}
 
-                {/* Step 4: Photos */}
-                {step === 4 && (
+                {/* Step 5: Photos */}
+                {step === 5 && (
                     <div className="space-y-6 animate-fadeIn">
                         <h1 className="text-2xl font-bold text-center">Show Yourself</h1>
                         <p className="text-neutral-500 text-center text-sm">Upload up to 5 best photos of yourself.</p>
@@ -392,12 +410,12 @@ const Signup = () => {
                             ))}
                         </div>
 
-                        <Button onClick={handleStep4}>{isLoading ? 'Loading...' : 'Next'}</Button>
+                        <Button onClick={handleStep5}>{isLoading ? 'Loading...' : 'Next'}</Button>
                     </div>
                 )}
 
-                {/* Step 5: Terms & Conditions */}
-                {step === 5 && (
+                {/* Step 6: Terms & Conditions */}
+                {step === 6 && (
                     <div className="space-y-6 animate-fadeIn">
                         <h1 className="text-2xl font-bold text-center">Terms & Conditions</h1>
                         <p className="text-neutral-500 text-center text-sm">Please review and accept our Terms & Conditions</p>
@@ -441,36 +459,9 @@ const Signup = () => {
                             </label>
                         </div>
 
-                        <Button onClick={handleStep5} disabled={!termsAccepted || isLoading}>
-                            {isLoading ? 'Sending OTP...' : 'Continue to OTP'}
+                        <Button onClick={handleCompleteSignup} disabled={!termsAccepted || isLoading}>
+                            {isLoading ? 'Creating Profile...' : 'Complete Signup'}
                         </Button>
-                    </div>
-                )}
-
-                {/* Step 6: OTP */}
-                {step === 6 && (
-                    <div className="space-y-6 animate-fadeIn">
-                        <div className="text-center">
-                            <h1 className="text-2xl font-bold mb-2">Check your inbox</h1>
-                            <p className="text-neutral-500">OTP sent to {formData.email}</p>
-                        </div>
-
-                         <div className="flex justify-center gap-2 mb-4">
-                             {otp.map((digit, idx) => (
-                                <div key={idx} className={`flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center border ${digit ? 'border-primary bg-white dark:bg-white/5' : 'border-[#e7cfdd] dark:border-white/20 bg-white dark:bg-white/5'} rounded-xl shadow-sm transition-all`}>
-                                     <input
-                                        id={`otp-${idx}`}
-                                        type="text"
-                                        maxLength="1"
-                                        value={digit}
-                                        onChange={(e) => handleOtpChange(idx, e.target.value)}
-                                        className="w-full h-full text-center text-xl sm:text-2xl font-bold bg-transparent outline-none text-neutral-900 dark:text-white"
-                                     />
-                                </div>
-                             ))}
-                        </div>
-
-                        <Button onClick={handleVerifyOtp} disabled={isLoading}>{isLoading ? 'Verifying...' : 'Finish Signup'}</Button>
                     </div>
                 )}
                 

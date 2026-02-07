@@ -1,4 +1,5 @@
 import User from "../models/userModel.js";
+import TempUser from "../models/tempUserModel.js"; // Import TempUser
 import Chat from "../models/chatModel.js";
 import sendEmail from "../utils/sendEmail.js";
 import { generateOTP, hashOTP, verifyOTP } from "../utils/otpUtil.js";
@@ -12,98 +13,53 @@ const createToken = (id) => {
   });
 };
 
-// Parameters confirmed: email, name, branch, year, gender, interestedIn, interests, greenFlags, redFlags, profilePics (files)
 // ==================== SIGNUP FLOW ====================
 
-// Send OTP for Signup
+// 1. Send OTP (Step 1)
 export const sendSignupOtp = handleAsyncError(async (req, res, next) => {
-  const {
-    email,
-    name,
-    branch,
-    year,
-    gender,
-    interestedIn,
-    interests,
-    greenFlags,
-    redFlags,
-    // profilePics, // Taken from req.files instead
-  } = req.body;
+  const { email } = req.body;
 
-  // 0. Validate Images
-  if (!req.files || req.files.length === 0) {
+  if (!email || !email.endsWith("@nitk.edu.in")) {
     return res.status(400).json({
       success: false,
-      message: "At least one profile picture is required.",
+      message: "Please provide a valid @nitk.edu.in email address.",
     });
   }
 
-  // Convert images to Base64
-  const profilePics = req.files.map((file) => {
-    return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
-  });
-
-  // 1. Check email domain
-  if (!email.endsWith("@nitk.edu.in")) {
-    return res.status(400).json({
-      success: false,
-      message: "Only @nitk.edu.in email addresses are allowed.",
-    });
-  }
-
-  // 2. Check if user exists
-  let user = await User.findOne({ email });
-
-  if (user && user.isVerified) {
+  // Check if user already exists (and is verified)
+  const existingUser = await User.findOne({ email });
+  if (existingUser && existingUser.isVerified) {
     return res.status(400).json({
       success: false,
       message: "User already exists. Please login.",
     });
   }
 
-  // 3. Generate OTP
+  // Generate OTP
   const otp = generateOTP();
   const hashedOtp = await hashOTP(otp);
   const otpExpires = Date.now() + 5 * 60 * 1000; // 5 minutes
 
-  // 4. Create or Update user (if unverified)
-  if (!user) {
-    user = await User.create({
+  // Upsert TempUser
+  let tempUser = await TempUser.findOne({ email });
+  if (tempUser) {
+    tempUser.otpHash = hashedOtp;
+    tempUser.otpExpires = otpExpires;
+    tempUser.isVerified = false; // Reset verification on new OTP
+    await tempUser.save();
+  } else {
+    tempUser = await TempUser.create({
       email,
-      name,
-      branch,
-      year,
-      gender,
-      interestedIn,
-      interests,
-      greenFlags,
-      redFlags,
-      profilePics,
       otpHash: hashedOtp,
       otpExpires,
       isVerified: false,
     });
-  } else {
-    // User exists but is not verified -> Update OTP and details (Retry Signup)
-    // We allow overwriting because the previous attempt was never verified.
-    user.name = name;
-    user.branch = branch;
-    user.year = year;
-    user.gender = gender;
-    user.interestedIn = interestedIn;
-    user.interests = interests;
-    user.greenFlags = greenFlags;
-    user.redFlags = redFlags;
-    user.profilePics = profilePics;
-    user.otpHash = hashedOtp;
-    user.otpExpires = otpExpires;
-    await user.save();
   }
 
-  // 5. Send Email
+  // Send Email
   const message = `Your OTP for NITK Knot Signup is: ${otp}.\nIt is valid for 5 minutes.`;
   const emailSent = await sendEmail({
-    email: user.email,
+    email,
     subject: "NITK Knot Signup OTP",
     message,
   });
@@ -117,11 +73,11 @@ export const sendSignupOtp = handleAsyncError(async (req, res, next) => {
 
   res.status(200).json({
     success: true,
-    message: `OTP sent to ${user.email}`,
+    message: `OTP sent to ${email}`,
   });
 });
 
-// Verify OTP for Signup
+// 2. Verify OTP (Step 2)
 export const verifySignupOtp = handleAsyncError(async (req, res, next) => {
   const { email, otp } = req.body;
 
@@ -131,47 +87,132 @@ export const verifySignupOtp = handleAsyncError(async (req, res, next) => {
       .json({ success: false, message: "Email and OTP are required" });
   }
 
-  const user = await User.findOne({ email }).select("+otpHash +otpExpires");
+  const tempUser = await TempUser.findOne({ email });
 
-  if (!user) {
-    return res.status(400).json({ success: false, message: "User not found" });
+  if (!tempUser) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid request. Please resend OTP." });
   }
 
-  if (user.isVerified) {
-    return res.status(400).json({
-      success: false,
-      message: "User already verified. Please login.",
-    });
-  }
-
-  // Check expiry
-  if (user.otpExpires < Date.now()) {
+  if (tempUser.otpExpires < Date.now()) {
     return res.status(400).json({ success: false, message: "OTP has expired" });
   }
 
-  // Verify OTP
-  const isMatch = await verifyOTP(otp, user.otpHash);
-  if (!isMatch) {
+  const isValid = await verifyOTP(otp, tempUser.otpHash);
+  if (!isValid) {
     return res.status(400).json({ success: false, message: "Invalid OTP" });
   }
 
-  // Success: Clear OTP, set verified, send token
-  user.isVerified = true;
-  user.otpHash = undefined;
-  user.otpExpires = undefined;
-  await user.save();
-
-  const token = createToken(user._id);
+  // Mark as verified
+  tempUser.isVerified = true;
+  await tempUser.save();
 
   res.status(200).json({
     success: true,
-    message: "Signup successful",
+    message: "Email verified successfully. Please complete your profile.",
+  });
+});
+
+// 3. Complete Signup (Step 3 - Final)
+export const completeSignup = handleAsyncError(async (req, res, next) => {
+  const { email, name, branch, year, gender, interests, greenFlags, redFlags } =
+    req.body;
+
+  // STRICT RULE: Auto-derive interestedIn
+  if (gender !== "MALE" && gender !== "FEMALE") {
+    return res.status(400).json({
+      success: false,
+      message: "Gender must be either MALE or FEMALE",
+    });
+  }
+  const interestedIn = gender === "MALE" ? "FEMALE" : "MALE";
+
+  // Check if TempUser is verified
+  const tempUser = await TempUser.findOne({ email });
+  if (!tempUser || !tempUser.isVerified) {
+    return res.status(400).json({
+      success: false,
+      message: "Email not verified. Please verify OTP first.",
+    });
+  }
+
+  // Validation
+  if (!req.files || req.files.length === 0) {
+    return res.status(400).json({
+      success: false,
+      message: "At least one profile picture is required.",
+    });
+  }
+
+  // Process Images
+  const profilePics = req.files.map((file) => {
+    return `data:${file.mimetype};base64,${file.buffer.toString("base64")}`;
+  });
+
+  // Create real User
+  // Check existence one last time to be safe
+  let user = await User.findOne({ email });
+  if (user && user.isVerified) {
+    return res.status(400).json({
+      success: false,
+      message: "User already exists.",
+    });
+  }
+
+  // If user exists but stuck in unverified state from old flow, overwrite or update.
+  // Ideally we create new.
+  if (!user) {
+    user = await User.create({
+      email,
+      name,
+      branch,
+      year,
+      gender,
+      interestedIn,
+      interests: Array.isArray(interests) ? interests : interests.split(","), // Simple handling
+      greenFlags: Array.isArray(greenFlags)
+        ? greenFlags
+        : greenFlags.split(","),
+      redFlags: Array.isArray(redFlags) ? redFlags : redFlags.split(","),
+      profilePics,
+      isVerified: true, // Auto verified since TempUser was checked
+    });
+  } else {
+    // This branch might not be hit often with new flow, but good for cleanup
+    // Update existing unverified user
+    user.name = name;
+    user.branch = branch;
+    user.year = year;
+    user.gender = gender;
+    user.interestedIn = interestedIn;
+    user.interests = Array.isArray(interests)
+      ? interests
+      : interests.split(",");
+    user.greenFlags = Array.isArray(greenFlags)
+      ? greenFlags
+      : greenFlags.split(",");
+    user.redFlags = Array.isArray(redFlags) ? redFlags : redFlags.split(",");
+    user.profilePics = profilePics;
+    user.isVerified = true;
+    await user.save();
+  }
+
+  // Delete TempUser
+  await TempUser.deleteOne({ email });
+
+  // Generate Token
+  const token = createToken(user._id);
+
+  res.status(201).json({
+    success: true,
+    message: "Signup completed successfully",
     token,
     user: {
-      _id: user._id,
+      id: user._id,
       name: user.name,
       email: user.email,
-      role: user.role, // assuming optional role
+      profilePics: user.profilePics,
     },
   });
 });
@@ -441,9 +482,18 @@ export const getMatches = handleAsyncError(async (req, res, next) => {
 // Get Swipe History (Who I right swiped, left swiped, or matched)
 export const getSwipeHistory = handleAsyncError(async (req, res, next) => {
   const user = await User.findById(req.user.id)
-    .populate("rightSwipes", "name bio profilePics year branch")
-    .populate("leftSwipes", "name bio profilePics year branch")
-    .populate("matches", "name bio profilePics year branch");
+    .populate(
+      "rightSwipes",
+      "name bio profilePics year branch interests greenFlags redFlags",
+    )
+    .populate(
+      "leftSwipes",
+      "name bio profilePics year branch interests greenFlags redFlags",
+    )
+    .populate(
+      "matches",
+      "name bio profilePics year branch interests greenFlags redFlags",
+    );
 
   const historyMap = new Map();
 
@@ -458,9 +508,9 @@ export const getSwipeHistory = handleAsyncError(async (req, res, next) => {
 
   // Order matters: later types overwrite earlier ones if duplicate (e.g. Match > Like)
   // 1. Left Swipes (Passed)
-  processList(user.leftSwipes, "Passed");
+  processList(user.leftSwipes, "Left Swiped");
   // 2. Right Swipes (Liked)
-  processList(user.rightSwipes, "Liked");
+  processList(user.rightSwipes, "Right Swiped");
   // 3. Matches (Matched)
   processList(user.matches, "Matched");
 
@@ -519,8 +569,10 @@ export const updateProfile = handleAsyncError(async (req, res, next) => {
   if (name) user.name = name;
   if (branch) user.branch = branch;
   if (year) user.year = year;
-  if (gender) user.gender = gender;
-  if (interestedIn) user.interestedIn = interestedIn;
+
+  // STRICT RULE: Gender and InterestedIn are READ-ONLY
+  // if (gender) user.gender = gender;
+  // if (interestedIn) user.interestedIn = interestedIn;
 
   // Helper to parse comma-separated strings to arrays
   const parseArrayField = (field) => {

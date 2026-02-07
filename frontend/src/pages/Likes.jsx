@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import BottomNavbar from '../components/BottomNavbar';
+import BottomNavbar from '../components/bottomNavbar';
 import { getRequests } from '../services/userService';
 import { useNavigate } from 'react-router-dom';
 

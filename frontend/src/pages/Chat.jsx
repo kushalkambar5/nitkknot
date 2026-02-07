@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import BottomNavbar from '../components/BottomNavbar';
+import BottomNavbar from '../components/bottomNavbar';
 import chatService from '../services/chatService';
 import { getMyProfile } from '../services/userService';
 
@@ -11,7 +11,7 @@ const Chat = () => {
     const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
-    const currentUserId = localStorage.getItem('userId'); // Assuming userId is stored, or we fetch it.
+    const [currentUser, setCurrentUser] = useState(null); // Add state for current user
 
     useEffect(() => {
         const checkAccessAndFetch = async () => {
@@ -19,6 +19,7 @@ const Chat = () => {
                 // 1. Check Profile for Premium Status
                 const profileRes = await getMyProfile();
                 const user = profileRes.data.user || profileRes.data;
+                setCurrentUser(user);
                 
                 // Store current user ID if not in existing state/storage logic for safety in helper
                 if (!localStorage.getItem('userId')) {
@@ -77,22 +78,32 @@ const Chat = () => {
     };
 
     const getParticipantDetails = (room) => {
-        // Need current user ID. If not in state, try localStorage or simple logic
-        // Participants is array of User objects.
-        // We need to filter out the current user. Since we don't have current user ID easily available in scope 
-        // without passing it or assuming standard storage, let's look at `getMyProfile` usage.
-        // We saved it to localStorage above.
-        const myId = localStorage.getItem('userId'); 
+        // Use state first, then localStorage as fallback
+        const myId = currentUser?._id || localStorage.getItem('userId'); 
         
         if (!room.participants || room.participants.length === 0) {
             return { name: 'Unknown', pic: null, id: null };
         }
         
+        // Filter out current user
         const other = room.participants.find(p => p._id !== myId) || room.participants.find(p => p !== myId);
         
-        if (!other) return { name: 'Unknown', pic: null, id: null };
+        // If filter returns nothing (meaning I am the only participant?), fallback to first
+        // But usually there are 2.
         
-        // Handle if other is just ID (should not happen due to populate) or Object
+        if (!other) {
+             // Fallback: if matches myId or no other found, maybe I'm chatting with myself (testing) or data issue
+             // Show the other one if length > 1
+             if (room.participants.length > 1) {
+                 return { 
+                     name: room.participants[0].name === currentUser?.name ? room.participants[1].name : room.participants[0].name,
+                     pic: room.participants[0]._id === myId ? room.participants[1].profilePics?.[0] : room.participants[0].profilePics?.[0],
+                     id: room.participants[0]._id === myId ? room.participants[1]._id : room.participants[0]._id
+                 }
+             }
+             return { name: 'Unknown', pic: null, id: null };
+        }
+        
         const name = other.name || 'User';
         const pic = (other.profilePics && other.profilePics.length > 0) ? other.profilePics[0] : null;
         const id = other._id;

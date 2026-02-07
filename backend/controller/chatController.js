@@ -22,10 +22,20 @@ export const getChats = handleAsyncError(async (req, res, next) => {
     }
   }
 
-  const chats = await Chat.find({ participants: userId })
+  // Fetch all chats where user is a participant
+  const allChats = await Chat.find({ participants: userId })
     .populate("participants", "name profilePics")
     .populate("lastMessage")
     .sort({ updatedAt: -1 });
+
+  // Filter chats to only include those with matched users
+  const chats = allChats.filter((chat) => {
+    const otherParticipant = chat.participants.find(
+      (p) => p._id.toString() !== userId.toString(),
+    );
+    // If no other participant (shouldn't happen) or other participant is in matches
+    return otherParticipant && user.matches.includes(otherParticipant._id);
+  });
 
   res.status(200).json({
     success: true,
@@ -108,9 +118,17 @@ export const getChatByUserId = handleAsyncError(async (req, res, next) => {
   const currentUserId = req.user.id;
 
   // Check if they are matched?
-  // Ideally we should only allow chat if matched.
   const currentUser = await User.findById(currentUserId);
-  if (!currentUser.matches.some((match) => match.toString() === userId)) {
+  console.log(`Chat Request - User: ${currentUserId}, Target: ${userId}`);
+  console.log(`Matches:`, currentUser.matches);
+
+  const isMatched = currentUser.matches.some((match) => {
+    const id = match._id || match;
+    return id.toString() === userId.toString();
+  });
+
+  if (!isMatched) {
+    console.log("Match verification failed");
     return res
       .status(403)
       .json({ success: false, message: "You are not matched with this user." });

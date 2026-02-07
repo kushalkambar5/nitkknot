@@ -1,15 +1,17 @@
 import api from "./axiosInstance";
 
 // Auth
-export const signupSendOtp = (formData) => {
-  // Use FormData for file uploads (axios handles Content-Type automatically if we pass FormData)
-  return api.post("/auth/signup/send-otp", formData, {
+export const signupSendOtp = (data) => api.post("/auth/signup/send-otp", data);
+
+export const signupVerifyOtp = (data) =>
+  api.post("/auth/signup/verify-otp", data);
+
+export const signupComplete = (formData) => {
+  return api.post("/auth/signup/complete", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
 };
 
-export const signupVerifyOtp = (data) =>
-  api.post("/auth/signup/verify-otp", data);
 export const loginSendOtp = (data) => api.post("/auth/login/send-otp", data);
 export const loginVerifyOtp = (data) =>
   api.post("/auth/login/verify-otp", data);
@@ -32,6 +34,7 @@ export const getSwipeHistory = () => api.get("/auth/history");
 const userService = {
   signupSendOtp,
   signupVerifyOtp,
+  signupComplete,
   loginSendOtp,
   loginVerifyOtp,
   getMyProfile,

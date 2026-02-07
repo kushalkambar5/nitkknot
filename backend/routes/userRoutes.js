@@ -15,6 +15,7 @@ import {
   updateProfile,
   logout,
   upgradeToPremium,
+  completeSignup,
 } from "../controller/userController.js";
 import upload from "../middleware/uploadMiddleware.js";
 import { protect, restrictToPremium } from "../middleware/authMiddleware.js";
@@ -32,13 +33,20 @@ const authLimiter = rateLimit({
 });
 
 // router.post("/signup/send-otp", sendSignupOtp);
+// router.post("/signup/send-otp", sendSignupOtp);
 router.post(
   "/signup/send-otp",
   authLimiter,
-  upload.array("profilePics", 5),
+  // upload.array("profilePics", 5), // Not needed for step 1
   sendSignupOtp,
 );
 router.post("/signup/verify-otp", authLimiter, verifySignupOtp);
+router.post(
+  "/signup/complete",
+  authLimiter,
+  upload.array("profilePics", 5),
+  completeSignup,
+);
 router.post("/login/send-otp", authLimiter, sendLoginOtp);
 router.post("/login/verify-otp", authLimiter, verifyLoginOtp);
 router.get("/profiles", showProfile);
