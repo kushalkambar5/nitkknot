@@ -18,6 +18,7 @@ export const loginVerifyOtp = (data) =>
 export const getMyProfile = () => api.get("/auth/me"); // userRoutes mounts to /auth
 export const getRequests = () => api.get("/auth/requests"); // "Who swipes right on me"
 export const getLikes = () => api.get("/auth/likes"); // "Who liked me" (Premium)
+export const getMatches = () => api.get("/auth/matches"); // "Matches" (Mutual)
 export const getAllProfiles = () => api.get("/auth/profiles"); // Admin/Debug usage?
 export const createLike = (userId) => api.post(`/auth/like/${userId}`);
 export const updateProfile = (formData) =>
@@ -26,12 +27,7 @@ export const updateProfile = (formData) =>
   });
 export const logout = () => api.post("/auth/logout");
 export const upgradeToPremium = () => api.post("/auth/upgrade");
-export const getSwipeHistory = () => {
-  const token = localStorage.getItem("token");
-  return api.get("/history", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-};
+export const getSwipeHistory = () => api.get("/auth/history");
 
 const userService = {
   signupSendOtp,
@@ -41,6 +37,7 @@ const userService = {
   getMyProfile,
   getRequests,
   getLikes,
+  getMatches,
   getAllProfiles,
   createLike,
   updateProfile,

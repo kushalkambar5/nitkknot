@@ -208,6 +208,12 @@ const Profile = () => {
                Edit Profile
           </button>
 
+          {/* Report Issue Button */}
+           <button onClick={() => navigate('/report')} className="w-full py-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl font-bold text-base shadow-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all flex items-center justify-center gap-2">
+                <span className="material-symbols-outlined text-[20px]">report_problem</span>
+                Report an Issue
+           </button>
+
           {/* Action Grid */}
           <div className="grid grid-cols-2 gap-4 pb-4">
                <button onClick={() => navigate('/privacy')} className="py-3 bg-neutral-100 dark:bg-white/5 text-neutral-600 dark:text-neutral-300 rounded-xl font-semibold text-sm hover:bg-neutral-200 dark:hover:bg-white/10 transition">

@@ -12,7 +12,13 @@ export const reportIssue = handleAsyncError(async (req, res, next) => {
     });
   }
 
-  const allowedCategories = ["Bug", "Feedback", "Feature Request", "Other"];
+  const allowedCategories = [
+    "harassment",
+    "fake",
+    "inappropriate",
+    "bug",
+    "other",
+  ];
   if (!allowedCategories.includes(category)) {
     return res.status(400).json({
       success: false,

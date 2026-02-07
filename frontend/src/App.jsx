@@ -1,5 +1,6 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
@@ -13,10 +14,12 @@ import './App.css';
 import Terms from './pages/Terms';
 import PremiumFeatures from './pages/PremiumFeatures';
 import Connections from './pages/Connections';
+import Report from './pages/Report';
 
 function App() {
   return (
     <BrowserRouter>
+      <Toaster position="top-center" reverseOrder={false} />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
@@ -26,10 +29,11 @@ function App() {
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/likes" element={<Likes />} />
         <Route path="/chat" element={<Chat />} />
-        <Route path="/chat/:roomId" element={<ChatRoom />} />
+        <Route path="/chat/:userId" element={<ChatRoom />} />
         <Route path="/premium" element={<PremiumFeatures />} />
         <Route path='/terms' element={<Terms/>}/>
         <Route path='/connections' element={<Connections/>}/>
+        <Route path='/report' element={<Report/>}/>
       </Routes>
     </BrowserRouter>
   );

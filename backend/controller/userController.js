@@ -1,4 +1,5 @@
 import User from "../models/userModel.js";
+import Chat from "../models/chatModel.js";
 import sendEmail from "../utils/sendEmail.js";
 import { generateOTP, hashOTP, verifyOTP } from "../utils/otpUtil.js";
 import jwt from "jsonwebtoken";
@@ -373,9 +374,39 @@ export const createLike = handleAsyncError(async (req, res, next) => {
     $addToSet: { likesReceived: req.user.id },
   });
 
+  // Check for Match (Mutual Like)
+  // If targetUser has ALREADY liked current user
+  let isMatch = false;
+  // We need to re-fetch targetUser to be sure or just check the boolean if distinct
+  // Checking `likes` array of targetUser
+  if (targetUser.likes.includes(req.user.id)) {
+    isMatch = true;
+
+    // Add to matches for both
+    await User.findByIdAndUpdate(req.user.id, {
+      $addToSet: { matches: targetUserId },
+    });
+    await User.findByIdAndUpdate(targetUserId, {
+      $addToSet: { matches: req.user.id },
+    });
+
+    // Create Chat
+    // Check if exists first to be safe
+    const existingChat = await Chat.findOne({
+      participants: { $all: [req.user.id, targetUserId] },
+    });
+
+    if (!existingChat) {
+      await Chat.create({
+        participants: [req.user.id, targetUserId],
+      });
+    }
+  }
+
   res.status(200).json({
     success: true,
-    message: `You liked ${targetUser.name}`,
+    message: isMatch ? "It's a Match!" : `You liked ${targetUser.name}`,
+    isMatch,
     user,
   });
 });
@@ -392,6 +423,20 @@ export const whoLikedMe = handleAsyncError(async (req, res, next) => {
   });
 });
 
+// Get Matches (Mutual Likes)
+export const getMatches = handleAsyncError(async (req, res, next) => {
+  const user = await User.findById(req.user.id).populate(
+    "matches",
+    "name bio profilePics year branch",
+  );
+
+  res.status(200).json({
+    success: true,
+    count: user.matches.length,
+    users: user.matches,
+  });
+});
+
 // Get Swipe History (Who I right swiped, left swiped, or matched)
 export const getSwipeHistory = handleAsyncError(async (req, res, next) => {
   const user = await User.findById(req.user.id)
@@ -401,28 +446,25 @@ export const getSwipeHistory = handleAsyncError(async (req, res, next) => {
 
   const historyMap = new Map();
 
+  const processList = (list, type) => {
+    if (!list) return;
+    list.forEach((u) => {
+      if (u && u._id) {
+        historyMap.set(u._id.toString(), { user: u, type });
+      }
+    });
+  };
+
+  // Order matters: later types overwrite earlier ones if duplicate (e.g. Match > Like)
   // 1. Left Swipes (Passed)
-  if (user.leftSwipes) {
-    user.leftSwipes.forEach((u) => {
-      historyMap.set(u._id.toString(), { user: u, type: "Passed" });
-    });
-  }
-
+  processList(user.leftSwipes, "Passed");
   // 2. Right Swipes (Liked)
-  if (user.rightSwipes) {
-    user.rightSwipes.forEach((u) => {
-      historyMap.set(u._id.toString(), { user: u, type: "Liked" });
-    });
-  }
+  processList(user.rightSwipes, "Liked");
+  // 3. Matches (Matched)
+  processList(user.matches, "Matched");
 
-  // 3. Matches (Overwrite others as this is the highest status)
-  if (user.matches) {
-    user.matches.forEach((u) => {
-      historyMap.set(u._id.toString(), { user: u, type: "Matched" });
-    });
-  }
-
-  const history = Array.from(historyMap.values());
+  // Convert to array and reverse to show most recent first (based on insertion order)
+  const history = Array.from(historyMap.values()).reverse();
 
   res.status(200).json({
     success: true,

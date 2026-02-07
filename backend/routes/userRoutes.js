@@ -9,6 +9,7 @@ import {
   showRequests,
   createLike,
   whoLikedMe,
+  getMatches,
   getSwipeHistory,
   updateProfile,
   logout,
@@ -29,6 +30,7 @@ router.get("/me", protect, showMyProfile);
 // Routes for Connections Page (Blur logic handled in frontend)
 router.get("/requests", protect, showRequests); // Who right swiped me
 router.get("/likes", protect, whoLikedMe); // Who liked me
+router.get("/matches", protect, getMatches); // Mutual matches
 router.get("/history", protect, getSwipeHistory); // My right swipe history
 router.put("/update", protect, upload.array("profilePics", 6), updateProfile);
 router.post("/logout", logout);

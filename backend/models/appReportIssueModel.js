@@ -9,7 +9,7 @@ const appReportIssueSchema = new mongoose.Schema(
     },
     category: {
       type: String,
-      enum: ["Bug", "Feedback", "Feature Request", "Other"],
+      enum: ["harassment", "fake", "inappropriate", "bug", "other"],
       required: true,
     },
     description: {

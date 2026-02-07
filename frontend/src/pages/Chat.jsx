@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import BottomNavbar from '../components/BottomNavbar';
-import { getMyChatRooms } from '../services/chatRoomService';
+import chatService from '../services/chatService';
 import { getMyProfile } from '../services/userService';
 
 const Chat = () => {
@@ -11,6 +11,7 @@ const Chat = () => {
     const [error, setError] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
     const navigate = useNavigate();
+    const currentUserId = localStorage.getItem('userId'); // Assuming userId is stored, or we fetch it.
 
     useEffect(() => {
         const checkAccessAndFetch = async () => {
@@ -19,6 +20,11 @@ const Chat = () => {
                 const profileRes = await getMyProfile();
                 const user = profileRes.data.user || profileRes.data;
                 
+                // Store current user ID if not in existing state/storage logic for safety in helper
+                if (!localStorage.getItem('userId')) {
+                     localStorage.setItem('userId', user._id);
+                }
+
                 if (!user.isPremium) {
                     setIsPremium(false);
                     setLoading(false);
@@ -28,18 +34,16 @@ const Chat = () => {
                 setIsPremium(true);
 
                 // 2. Fetch Chats if Premium
-                const chatRes = await getMyChatRooms();
+                const chatRes = await chatService.getChats();
                 if (chatRes.data.success) {
-                    setRooms(chatRes.data.chatRooms || []);
+                    setRooms(chatRes.data.chats || []);
                 } else {
                     setError('Failed to load chats');
                 }
 
             } catch (err) {
                 console.error(err);
-                // Handle 403 explicitly if api call fails
                 if (err.response && (err.response.status === 403 || err.response.status === 401)) {
-                     // Could be auth issue or premium issue
                      if (err.response.status === 403) setIsPremium(false);
                      else setError('Please login again');
                 } else {
@@ -53,7 +57,6 @@ const Chat = () => {
         checkAccessAndFetch();
     }, []);
 
-    // Helper to format time relative
     const formatTime = (dateString) => {
         if (!dateString) return '';
         const date = new Date(dateString);
@@ -74,15 +77,27 @@ const Chat = () => {
     };
 
     const getParticipantDetails = (room) => {
-        const myId = localStorage.getItem('userId');
+        // Need current user ID. If not in state, try localStorage or simple logic
+        // Participants is array of User objects.
+        // We need to filter out the current user. Since we don't have current user ID easily available in scope 
+        // without passing it or assuming standard storage, let's look at `getMyProfile` usage.
+        // We saved it to localStorage above.
+        const myId = localStorage.getItem('userId'); 
+        
         if (!room.participants || room.participants.length === 0) {
-            return { name: 'Unknown', pic: null };
+            return { name: 'Unknown', pic: null, id: null };
         }
-        const other = room.participants.find(p => p._id !== myId) || room.participants[0];
-        return {
-            name: other.name || 'User',
-            pic: (other.profilePics && other.profilePics.length > 0) ? other.profilePics[0] : null,
-        };
+        
+        const other = room.participants.find(p => p._id !== myId) || room.participants.find(p => p !== myId);
+        
+        if (!other) return { name: 'Unknown', pic: null, id: null };
+        
+        // Handle if other is just ID (should not happen due to populate) or Object
+        const name = other.name || 'User';
+        const pic = (other.profilePics && other.profilePics.length > 0) ? other.profilePics[0] : null;
+        const id = other._id;
+        
+        return { name, pic, id };
     };
 
     const filteredRooms = rooms.filter(room => {
@@ -90,7 +105,6 @@ const Chat = () => {
         return name.toLowerCase().includes(searchQuery.toLowerCase());
     });
 
-    // ==================== PREMIUM LOCK VIEW ====================
     if (isPremium === false) {
         return (
             <div className="bg-[#1a0b14] min-h-screen flex flex-col font-display relative overflow-hidden">
@@ -99,11 +113,9 @@ const Chat = () => {
                 </header>
                 
                 <main className="flex-1 flex flex-col items-center justify-center text-center p-8 relative z-10">
-                     {/* Crown Icon */}
                      <div className="mb-6 animate-bounce-slow">
                         <span className="text-6xl">👑</span>
                      </div>
-                     
                      <h2 className="text-3xl font-bold text-white mb-3">Premium Feature</h2>
                      <p className="text-white/60 text-lg mb-10 max-w-xs leading-relaxed">
                         This feature is for Premium members only.
@@ -121,7 +133,6 @@ const Chat = () => {
 
     return (
         <div className="bg-background-light dark:bg-background-dark min-h-screen pb-24 text-[#1b0d16] dark:text-white font-display">
-            {/* Header */}
             <header className="sticky top-0 z-20 bg-pink/80 dark:bg-background-dark/80 backdrop-blur-md px-4 pt-6 pb-4 border-b border-gray-100 dark:border-white/5">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-3xl font-bold tracking-tight text-[#1b0d16] dark:text-white">Messages</h1>
@@ -130,7 +141,6 @@ const Chat = () => {
                     </div>
                 </div>
                 
-                {/* Search Bar */}
                 <div className="relative">
                     <label className="flex flex-col min-w-40 h-11 w-full relative">
                         <div className="absolute left-4 top-0 bottom-0 flex items-center justify-center text-gray-400 pointer-events-none">
@@ -177,7 +187,7 @@ const Chat = () => {
                 ) : (
                     <div className="flex flex-col divide-y divide-gray-100 dark:divide-white/5">
                         {filteredRooms.map((room) => {
-                            const { name, pic } = getParticipantDetails(room);
+                            const { name, pic, id } = getParticipantDetails(room);
                             const lastMessage = room.lastMessage?.content || 'Start the conversation...';
                             const time = formatTime(room.lastMessage?.createdAt);
                             const isUnread = false; 
@@ -185,7 +195,7 @@ const Chat = () => {
                             return (
                                 <Link 
                                     key={room._id} 
-                                    to={`/chat/${room._id}`}
+                                    to={`/chat/${id}`}
                                     className="flex items-center gap-4 py-4 hover:bg-gray-50 dark:hover:bg-white/5 transition-colors cursor-pointer active:scale-[0.98] -mx-2 px-2 rounded-xl"
                                 >
                                     <div className="relative shrink-0">
@@ -227,6 +237,6 @@ const Chat = () => {
             <BottomNavbar />
         </div>
     );
-}
+};
 
 export default Chat;
