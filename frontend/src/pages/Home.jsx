@@ -6,7 +6,7 @@ import Button from '../components/Button';
 import FeatureCard from '../components/FeatureCard';
 import TrustCard from '../components/TrustCard';
 import BottomNavbar from '../components/BottomNavbar';
-import { getSlides, rightSwipe, leftSwipe, report } from '../services/slidesService';
+import { getSlides, rightSwipe, leftSwipe, like, report } from '../services/slidesService';
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -55,6 +55,8 @@ const Home = () => {
             await leftSwipe(currentProfile._id);
         } else if (action === 'right') {
             await rightSwipe(currentProfile._id);
+        } else if (action === 'like') {
+            await like(currentProfile._id);
         } else if (action === 'report') {
             const reason = prompt("Describe the issue with this profile:");
             if (!reason) return;
@@ -297,7 +299,7 @@ const Home = () => {
               </button>
               
               {/* Like (Heart) */}
-              <button onClick={() => handleSwipe('right')} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
+              <button onClick={() => handleSwipe('like')} className="w-16 h-16 rounded-full bg-primary flex items-center justify-center text-white shadow-lg shadow-primary/30 transition-transform active:scale-90">
                 <span className="material-symbols-outlined fill text-3xl">favorite</span>
               </button>
               

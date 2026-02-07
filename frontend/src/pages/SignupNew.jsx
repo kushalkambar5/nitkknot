@@ -70,14 +70,13 @@ const Signup = () => {
     };
 
     // Step 5: Terms & Conditions Acceptance
-    const handleStep5 = async () => {
+    const handleStep5 = () => {
         if (!termsAccepted) {
             setError('Please accept the Terms & Conditions to continue');
             return;
         }
         setError('');
-        console.debug('Handling Step 5: sending OTP for', formData.email);
-        await handleSendOtp();
+        handleSendOtp();
     };
 
     // Step 6: File Upload & Send OTP
@@ -89,9 +88,6 @@ const Signup = () => {
         const data = new FormData();
         Object.keys(formData).forEach(key => {
             if (['interests', 'greenFlags', 'redFlags'].includes(key)) {
-                // Split by comma and append each for parsing simplicity or rely on comma string
-                // Based on backend analysis, strings are fine, assume backend controller splits using `req.body` logic or String arrays
-                // Let's send comma-separated as the user controller seems to destructure `interests` from body directly.
                 data.append(key, formData[key]);
             } else {
                 data.append(key, formData[key]); 
@@ -104,16 +100,12 @@ const Signup = () => {
         });
 
         try {
-            // Using userService
             const response = await signupSendOtp(data);
-            console.debug('signupSendOtp response:', response);
-
-            // Accept HTTP 200 or explicit success flag
-            if (response && (response.status === 200 || response.data?.success === true)) {
-                setStep(6); // advance to OTP entry
+            
+            if (response.data.success) {
+                setStep(6);
             } else {
-                console.error('Unexpected signup response', response?.data);
-                setError(response?.data?.message || 'Signup failed');
+                setError(response.data.message || 'Signup failed');
             }
         } catch (err) {
             setError(err.response?.data?.message || 'Network error. Check console.');
@@ -123,7 +115,7 @@ const Signup = () => {
         }
     };
 
-    // Step 5: Verify OTP
+    // Step 6: Verify OTP
     const handleVerifyOtp = async () => {
         const otpValue = otp.join('');
         if (otpValue.length !== 6) return setError('Enter 6-digit OTP');
@@ -146,6 +138,20 @@ const Signup = () => {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleFileChange = (e) => {
+        if (e.target.files) {
+            setFiles(Array.from(e.target.files).slice(0, 5));
+        }
+    };
+
+    const handleOtpChange = (index, value) => {
+         if (value.length > 1) return;
+        const newOtp = [...otp];
+        newOtp[index] = value;
+        setOtp(newOtp);
+        if (value !== '' && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
     };
 
     // Helper function to toggle preset interests
@@ -177,20 +183,6 @@ const Signup = () => {
 
     // Get selected interests
     const selectedInterests = formData.interests.split(',').map(i => i.trim()).filter(i => i);
-
-    const handleFileChange = (e) => {
-        if (e.target.files) {
-            setFiles(Array.from(e.target.files).slice(0, 5)); // Limit to 5
-        }
-    };
-
-    const handleOtpChange = (index, value) => {
-         if (value.length > 1) return;
-        const newOtp = [...otp];
-        newOtp[index] = value;
-        setOtp(newOtp);
-        if (value !== '' && index < 5) document.getElementById(`otp-${index + 1}`)?.focus();
-    };
 
     return (
         <div className="bg-background-light dark:bg-background-dark text-[#1b0d16] dark:text-white transition-colors duration-300 min-h-screen flex flex-col font-display">
@@ -286,7 +278,7 @@ const Signup = () => {
                     </div>
                 )}
 
-                {/* Step 3: Preferences */}
+                {/* Step 3: Preferences & Interests */}
                 {step === 3 && (
                      <div className="space-y-5 animate-fadeIn">
                         <h1 className="text-2xl font-bold text-center">Your Vibe</h1>
@@ -360,10 +352,14 @@ const Signup = () => {
                                 </div>
                             )}
                         </div>
+
+                        {/* Green Flags */}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold ml-1 text-green-600">Green Flags (comma separated)</label>
                             <input type="text" value={formData.greenFlags} onChange={e => setFormData({...formData, greenFlags: e.target.value})} placeholder="Loyalty, Humor..." className="input-field" />
                         </div>
+
+                        {/* Red Flags */}
                         <div className="space-y-2">
                             <label className="text-sm font-semibold ml-1 text-red-500">Red Flags (comma separated)</label>
                             <input type="text" value={formData.redFlags} onChange={e => setFormData({...formData, redFlags: e.target.value})} placeholder="Ghosting, Ego..." className="input-field" />
