@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import userService from '../services/userService';
 import { rightSwipe, leftSwipe } from '../services/slidesService';
-import BottomNavbar from '../components/BottomNavbar';
+import BottomNavbar from '../components/bottomNavbar';
 
 const Connections = () => {
     const navigate = useNavigate();
@@ -410,7 +410,7 @@ const Connections = () => {
             )}
 
             {/* Premium Upsell Overlay - Only show if current tab is gated AND user is NOT premium */}
-            {!isPremium && (activeTab === 'requests' || activeTab === 'likes' || activeTab === 'matches') && (
+            {!isPremium && (activeTab === 'requests' || activeTab === 'likes') && (
                 <div className="fixed bottom-24 left-4 right-4 z-20">
                     <div className="rounded-xl bg-white/95 dark:bg-[#2d1624]/95 p-4 shadow-[0_20px_50px_rgba(0,0,0,0.15)] backdrop-blur-lg border border-white/20 flex flex-col items-center gap-2">
                         <Link to="/premium" className="w-full flex items-center justify-center rounded-full bg-indigo-accent py-3 text-center text-base font-bold text-white shadow-lg transition-transform active:scale-95">

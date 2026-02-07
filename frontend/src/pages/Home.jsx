@@ -5,7 +5,7 @@ import Footer from '../components/Footer';
 import Button from '../components/Button';
 import FeatureCard from '../components/FeatureCard';
 import TrustCard from '../components/TrustCard';
-import BottomNavbar from '../components/BottomNavbar';
+import BottomNavbar from '../components/bottomNavbar';
 import { getSlides, rightSwipe, leftSwipe, report, like } from '../services/slidesService';
 import userService from '../services/userService';
 import logo from '../assets/logo.png';

@@ -107,7 +107,12 @@ export const rightSwipe = handleAsyncError(async (req, res, next) => {
   // Check for Match
   // We need to check if targetUser has swiped requestor right
   let isMatch = false;
-  if (targetUser.rightSwipes.includes(currentUser._id)) {
+
+  if (
+    targetUser.rightSwipes.some(
+      (id) => id.toString() === currentUser._id.toString(),
+    )
+  ) {
     isMatch = true;
 
     // Update Both Users' matches using $addToSet to avoid race/dupes nicely
@@ -249,15 +254,30 @@ export const like = handleAsyncError(async (req, res, next) => {
     $addToSet: { likesReceived: currentUser._id },
   });
 
-  // 5. check for match logic (Optional, since 'Like' usually implies intent)
-  // For now, consistent with existing 'like' which didn't check match.
-  // But if it counts as right swipe, it SHOULD check match?
-  // User said "dont swipe... only when right swiped".
-  // I'll stick to just recording the like. The match modal won't show on Frontend for "Like" button.
+  // 5. Check for Match (Mutual Like)
+  // If targetUser has ALREADY right-swiped current user, IT IS A MATCH!
+  // Even if I "Like" them, it counts as a match if they swiped me right.
+  let isMatch = false;
+  if (
+    targetUser.rightSwipes.some(
+      (id) => id.toString() === currentUser._id.toString(),
+    )
+  ) {
+    isMatch = true;
+
+    // Update Both Users' matches
+    await User.findByIdAndUpdate(currentUser._id, {
+      $addToSet: { matches: targetUserId },
+    });
+    await User.findByIdAndUpdate(targetUserId, {
+      $addToSet: { matches: currentUser._id },
+    });
+  }
 
   res.status(200).json({
     success: true,
-    message: "User liked",
+    message: isMatch ? "It's a Match!" : "User liked",
+    match: isMatch,
   });
 });
 
