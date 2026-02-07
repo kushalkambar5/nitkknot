@@ -430,6 +430,21 @@ const Connections = () => {
                                 </section>
                             )}
                             <div className="pb-8"></div>
+                            
+                            {/* UNDO LEFT SWIPE ACTION (Only for history & Left Swiped) */}
+                            {selectedProfile.status === 'Left Swiped' && (
+                                 <div className="px-6 pb-6 pt-2">
+                                     <button 
+                                        onClick={() => handleUndoLeftSwipe(selectedProfile._id)}
+                                        className="w-full py-4 rounded-full bg-linear-to-r from-pink-500 to-rose-500 text-white font-bold shadow-lg shadow-pink-500/30 active:scale-95 transition-transform flex items-center justify-center gap-2"
+                                     >
+                                         <span className="material-symbols-outlined filled">favorite</span>
+                                         Right Swipe
+                                     </button>
+                                     <p className="text-center text-xs text-gray-400 mt-2">Change your mind? Swipe right on them now!</p>
+                                 </div>
+                            )}
+
                         </div>
                     </div>
                 </div>

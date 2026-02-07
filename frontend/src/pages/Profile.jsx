@@ -208,11 +208,17 @@ const Profile = () => {
                Edit Profile
           </button>
 
-          {/* Report Issue Button */}
-           <button onClick={() => navigate('/report')} className="w-full py-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl font-bold text-base shadow-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all flex items-center justify-center gap-2">
-                <span className="material-symbols-outlined text-[20px]">report_problem</span>
-                Report an Issue
-           </button>
+          {/* Report Issue & User Manual Buttons */}
+           <div className="flex gap-3">
+               <button onClick={() => navigate('/usermanual')} className="flex-1 py-3 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-xl font-bold text-base shadow-sm hover:bg-indigo-100 dark:hover:bg-indigo-900/30 transition-all flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-[20px]">menu_book</span>
+                    User Manual
+               </button>
+               <button onClick={() => navigate('/report')} className="flex-1 py-3 bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400 rounded-xl font-bold text-base shadow-sm hover:bg-orange-100 dark:hover:bg-orange-900/30 transition-all flex items-center justify-center gap-2">
+                    <span className="material-symbols-outlined text-[20px]">report_problem</span>
+                    Report Issue
+               </button>
+           </div>
 
           {/* Action Grid */}
           <div className="grid grid-cols-2 gap-4 pb-4">

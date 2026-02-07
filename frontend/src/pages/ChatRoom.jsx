@@ -127,13 +127,11 @@ const ChatRoom = () => {
                                 <h1 className="text-[#1b0d16] dark:text-white text-base font-bold leading-tight">{targetUser?.name || "User"}</h1>
                                 <span className="material-symbols-outlined text-primary text-[16px] font-fill-1">verified</span>
                             </div>
-                            <span className="text-xs text-green-500 font-medium">Active now</span>
+
                         </div>
                     </div>
                 </div>
-                <button className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
-                    <span className="material-symbols-outlined text-gray-700 dark:text-gray-200">more_horiz</span>
-                </button>
+
             </header>
 
             {/* Chat Message Area */}
@@ -182,9 +180,7 @@ const ChatRoom = () => {
             {/* Input Area */}
             <div className="p-4 bg-background-light dark:bg-background-dark pb-8">
                 <form onSubmit={handleSendMessage} className="flex items-center gap-2 bg-gray-100 dark:bg-white/5 rounded-full px-2 py-1.5 focus-within:ring-2 focus-within:ring-primary/20 transition-all">
-                    <button type="button" className="p-2 text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
-                        <span className="material-symbols-outlined text-[24px]">add_circle</span>
-                    </button>
+
                     <input 
                         className="flex-1 bg-transparent border-none focus:ring-0 text-[15px] text-gray-800 dark:text-gray-100 placeholder:text-gray-400 py-2 outline-none" 
                         placeholder="Message..." 

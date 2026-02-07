@@ -15,6 +15,7 @@ import Terms from './pages/Terms';
 import PremiumFeatures from './pages/PremiumFeatures';
 import Connections from './pages/Connections';
 import Report from './pages/Report';
+import UserManual from './pages/UserManual';
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
         <Route path='/terms' element={<Terms/>}/>
         <Route path='/connections' element={<Connections/>}/>
         <Route path='/report' element={<Report/>}/>
+        <Route path='/usermanual' element={<UserManual/>}/>
       </Routes>
     </BrowserRouter>
   );

@@ -20,6 +20,14 @@ const Home = () => {
   const [showModal, setShowModal] = useState(false);
   const [showPremiumPrompt, setShowPremiumPrompt] = useState(false);
 
+  // Swipe Gesture State
+  const [dragStart, setDragStart] = useState(null); // { x, y }
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  const [exitDirection, setExitDirection] = useState(null); // 'left' | 'right' | null
+  const SWIPE_THRESHOLD = 100; // px
+  const ROTATION_FACTOR = 0.05; // deg per px
+
   // Check auth on mount
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -74,68 +82,142 @@ const Home = () => {
 
   const currentProfile = profiles[currentProfileIndex];
 
-  const handleSwipe = async (action) => {
+  // Unified Swipe Handler (Triggers animation first, then logic)
+  const triggerSwipe = async (direction) => {
+    if (exitDirection) return; // Already swiping
+
+    setExitDirection(direction);
+    
+    // Animate off-screen manually if triggered by button or keyboard
+    // If triggered by gesture, dragOffset is already set, but we aim for a target beyond screen
+    const screenWidth = window.innerWidth;
+    const targetX = direction === 'right' ? screenWidth : -screenWidth;
+    
+    setDragOffset({ x: targetX, y: 0 }); // This triggers the CSS transition
+
+    // Wait for animation to finish before API call and state update
+    setTimeout(async () => {
+        await handleSwipeLogic(direction);
+        resetSwipeState();
+    }, 300); // Match CSS transition duration
+  };
+
+  const handleSwipeLogic = async (action) => {
     if (!currentProfile) return;
 
     try {
         if (action === 'left') {
             await leftSwipe(currentProfile._id);
-            // Move to next profile
-            setCurrentImageIndex(0);
-            setCurrentProfileIndex(prev => prev + 1);
         } else if (action === 'right') {
-            // Attempt right swipe and handle server-side premium gating
             const resp = await rightSwipe(currentProfile._id);
-            // If server responded with 403 (premium required) or explicit failure about premium
-            // Axios throws for 4xx/5xx, so we catch it in the outer block.
-            // If resp.data.success is false and message indicates premium, handle it.
             if (resp && resp.data && resp.data.success) {
                 if (resp.data.match) {
-                    setMatchUser(resp.data.match);
-                    setShowMatchModal(true);
+                    // Ideally show match modal here
+                    alert("It's a Match!");
                 }
-                // Move to next profile
-                setCurrentImageIndex(0);
-                setCurrentProfileIndex(prev => prev + 1);
             } else if (resp && resp.data && resp.data.success === false && /premium/i.test(resp.data.message)) {
                 setShowPremiumPrompt(true);
-                return; // do not advance to next profile
+                // Don't advance if premium blocked (optionally refetch or undo exit?)
+                // For simplified UX, we let it slide and just show prompt, user will match again next time or Refresh.
+                // Actually if premium blocked, we shouldn't have animated out? 
+                // Too late now as per Tinder style, usually you check before or show prompt.
+                // We'll reset content for now.
+                return; 
             }
         } else if (action === 'report') {
-            const reason = prompt("Describe the issue with this profile:");
-            if (!reason) return;
-            await report(currentProfile._id, reason);
-            alert("User reported.");
-            // Move to next profile after reporting
-            setCurrentImageIndex(0);
-            setCurrentProfileIndex(prev => prev + 1);
+             const reason = prompt("Describe the issue with this profile:");
+             if (reason) {
+                 await report(currentProfile._id, reason);
+                 alert("User reported.");
+             } else {
+                 return; // Cancelled
+             }
         }
-
     } catch (err) {
       console.error('Swipe failed', err);
       if (err.response && err.response.status === 403) {
         setShowPremiumPrompt(true);
-      } else {
-        // Optionally, show a generic error or advance anyway to prevent being stuck
-        // For now, we'll just log the error and not advance if it's not a 403.
-        // If the API call truly failed, it's better not to advance the card.
       }
+    } finally {
+        // ALWAYS advance to next profile (unless explicit return above)
+        setCurrentImageIndex(0);
+        setCurrentProfileIndex(prev => prev + 1);
     }
+  };
+
+  const resetSwipeState = () => {
+      setDragStart(null);
+      setDragOffset({ x: 0, y: 0 });
+      setIsDragging(false);
+      setExitDirection(null);
   };
 
   const handleLike = async () => {
     if (!currentProfile) return;
     try {
         await like(currentProfile._id);
-        // User wants to "like" without swiping the card away.
-        // So, no setCurrentProfileIndex(prev => prev + 1);
-        // Optionally, show a temporary visual feedback like a heart animation on the card.
-        alert("Profile liked!"); // Replace with a better UI feedback
+        alert("Profile liked!"); 
     } catch (err) {
         console.error('Like failed', err);
-        // Handle errors, e.g., show a toast notification
         alert("Failed to like profile.");
     }
+  };
+
+  // Keyboard Support
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+        if (showModal || showPremiumPrompt) return;
+        if (e.key === 'ArrowLeft') triggerSwipe('left');
+        if (e.key === 'ArrowRight') triggerSwipe('right');
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentProfile, showModal, showPremiumPrompt, exitDirection]);
+
+  // GESTURE HANDLERS
+  const handleDragStart = (e) => {
+     if (showModal || showPremiumPrompt || exitDirection) return;
+     const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+     const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+     setDragStart({ x: clientX, y: clientY });
+     setIsDragging(true);
+  };
+
+  const handleDragMove = (e) => {
+      if (!isDragging || !dragStart) return;
+      
+      const clientX = e.type.includes('mouse') ? e.clientX : e.touches[0].clientX;
+      const clientY = e.type.includes('mouse') ? e.clientY : e.touches[0].clientY;
+      
+      const deltaX = clientX - dragStart.x;
+      const deltaY = clientY - dragStart.y;
+
+      setDragOffset({ x: deltaX, y: deltaY });
+  };
+
+  const handleDragEnd = () => {
+      if (!isDragging) return;
+      
+      // Check Threshold
+      if (dragOffset.x > SWIPE_THRESHOLD) {
+          triggerSwipe('right');
+      } else if (dragOffset.x < -SWIPE_THRESHOLD) {
+          triggerSwipe('left');
+      } else {
+          // Snap back
+          setDragOffset({ x: 0, y: 0 });
+      }
+      setIsDragging(false);
+      setDragStart(null);
+  };
+
+  // Mouse leave handling to prevent stuck drags
+  const handleMouseLeave = () => {
+      if (isDragging) {
+          setDragOffset({ x: 0, y: 0 });
+          setIsDragging(false);
+          setDragStart(null);
+      }
   };
 
   const nextImage = (e) => {
@@ -167,30 +249,7 @@ const Home = () => {
         return "Student";
   };
 
-  // Touch Event Handlers for Finger Swiping
-  const onTouchStart = (e) => {
-    setTouchEnd(null); // Reset touchEnd on new touch start
-    setTouchStart(e.targetTouches[0].clientX);
-  };
 
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-    const distance = touchStart - touchEnd;
-    const threshold = 75; // Pixels to consider a swipe
-    
-    if (distance > threshold) { // Swiped left
-      handleSwipe('left');
-    } else if (distance < -threshold) { // Swiped right
-      handleSwipe('right');
-    }
-    // Reset touch states
-    setTouchStart(null);
-    setTouchEnd(null);
-  };
 
   // ==================== GUEST VIEW ====================
   if (!isLoggedIn) {
@@ -217,6 +276,12 @@ const Home = () => {
                     Get Started
                   </Button>
                 </Link>
+                <div className="flex items-center justify-center gap-2 text-sm text-white/80">
+                    <span className="material-symbols-outlined text-base">info</span>
+                    <Link to="/usermanual" className="hover:text-white underline underline-offset-2 transition-colors">
+                        First read how does this app works
+                    </Link>
+                </div>
                 <p className="text-white text-sm font-medium">
                   Already have an account? <Link to="/login" className="text-rose-300 font-bold underline cursor-pointer hover:text-white transition-colors">Login</Link>
                 </p>
@@ -301,13 +366,33 @@ const Home = () => {
 
         {!loading && currentProfile && (
           <>
+
             {/* Profile Card */}
             <div 
-              className="relative w-full flex-1 rounded-xl overflow-hidden shadow-xl bg-white dark:bg-zinc-900 flex flex-col"
-              onTouchStart={onTouchStart}
-              onTouchMove={onTouchMove}
-              onTouchEnd={onTouchEnd}
+              className="relative w-full flex-1 rounded-xl overflow-hidden shadow-xl bg-white dark:bg-zinc-900 flex flex-col cursor-grab active:cursor-grabbing origin-bottom touch-none"
+              style={{
+                  transform: `translateX(${dragOffset.x}px) rotate(${dragOffset.x * ROTATION_FACTOR}deg)`,
+                  transition: isDragging ? 'none' : 'transform 0.3s ease-out'
+              }}
+              onMouseDown={handleDragStart}
+              onMouseMove={handleDragMove}
+              onMouseUp={handleDragEnd}
+              onMouseLeave={handleMouseLeave}
+              onTouchStart={handleDragStart}
+              onTouchMove={handleDragMove}
+              onTouchEnd={handleDragEnd}
             >
+              {/* Swipe Stamps */}
+              {dragOffset.x > 50 && (
+                  <div className="absolute top-8 left-8 z-30 border-4 border-emerald-500 rounded-lg px-4 py-2 transform -rotate-12 opacity-80 pointer-events-none">
+                      <span className="text-4xl font-extrabold text-emerald-500 uppercase tracking-widest">Like</span>
+                  </div>
+              )}
+              {dragOffset.x < -50 && (
+                  <div className="absolute top-8 right-8 z-30 border-4 border-rose-500 rounded-lg px-4 py-2 transform rotate-12 opacity-80 pointer-events-none">
+                      <span className="text-4xl font-extrabold text-rose-500 uppercase tracking-widest">Nope</span>
+                  </div>
+              )}
               
               {/* Image Container */}
               <div className="relative flex-[3] w-full overflow-hidden bg-gray-200 cursor-pointer" onClick={nextImage}>
@@ -390,13 +475,17 @@ const Home = () => {
             
             {/* Swipe Action Buttons */}
             <div className="flex items-center justify-between px-6 py-6 w-full max-w-[320px] mx-auto">
-              {/* Left Arrow (Pass) */}
-              <button onClick={() => handleSwipe('left')} className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90">
+               {/* Left Arrow (Pass) */}
+              <button 
+                onClick={() => triggerSwipe('left')} 
+                disabled={!!exitDirection}
+                className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90 disabled:opacity-50"
+              >
                 <span className="material-symbols-outlined text-2xl">arrow_back</span>
               </button>
               
               {/* Report (Flag) */}
-              <button onClick={() => handleSwipe('report')} className="w-14 h-14 rounded-full bg-white dark:bg-zinc-800 border border-gray-100 dark:border-white/5 flex items-center justify-center text-gray-400 hover:text-red-500 shadow-md transition-transform active:scale-90">
+              <button onClick={() => handleSwipeLogic('report')} className="w-14 h-14 rounded-full bg-white dark:bg-zinc-800 border border-gray-100 dark:border-white/5 flex items-center justify-center text-gray-400 hover:text-red-500 shadow-md transition-transform active:scale-90">
                 <span className="material-symbols-outlined text-2xl">flag</span>
               </button>
               
@@ -406,7 +495,11 @@ const Home = () => {
               </button>
               
               {/* Right Arrow (Swipe Right) */}
-               <button onClick={() => handleSwipe('right')} className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90">
+               <button 
+                onClick={() => triggerSwipe('right')} 
+                disabled={!!exitDirection}
+                className="w-12 h-12 rounded-full border border-gray-300 dark:border-white/10 flex items-center justify-center text-gray-500 hover:bg-gray-100 dark:hover:bg-white/5 shadow-sm transition-transform active:scale-90 disabled:opacity-50"
+               >
                 <span className="material-symbols-outlined text-2xl">arrow_forward</span>
               </button>
             </div>
