@@ -8,6 +8,7 @@ import TrustCard from '../components/TrustCard';
 import BottomNavbar from '../components/BottomNavbar';
 import { getSlides, rightSwipe, leftSwipe, report } from '../services/slidesService';
 import userService from '../services/userService';
+import logo from '../assets/logo.png';
 
 const Home = () => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -200,7 +201,7 @@ const Home = () => {
                <header className="flex items-center justify-between px-6 pt-6 pb-2 max-w-md mx-auto w-full">
                   <div className="flex items-center gap-2">
                     <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
-                      <span className="material-symbols-outlined">school</span>
+                      <img src={logo} alt="Logo" className="w-full h-full object-cover" />
                     </div>
                     <div>
                       <h1 className="text-xl font-bold tracking-tight">NITKnot</h1>

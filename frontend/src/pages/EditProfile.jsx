@@ -2,6 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getMyProfile, updateProfile } from '../services/userService';
 
+const PRESET_INTERESTS = ['Music', 'Sports', 'Gaming', 'Coding', 'Reading', 'Traveling', 'Cooking', 'Art', 'Photography', 'Fitness'];
+
+
 const EditProfile = () => {
     const navigate = useNavigate();
     const [loading, setLoading] = useState(false);
@@ -96,6 +99,15 @@ const EditProfile = () => {
     const removeInterest = (item) => {
         setInterests(interests.filter(i => i !== item));
     };
+
+    const togglePresetInterest = (interest) => {
+        if (interests.includes(interest)) {
+            setInterests(interests.filter(i => i !== interest));
+        } else {
+            setInterests([...interests, interest]);
+        }
+    };
+
 
     // Save
     const handleSave = async () => {
@@ -249,6 +261,28 @@ const EditProfile = () => {
             {/* Interests */}
             <div className="p-4">
                 <h3 className="text-gray-900 dark:text-white text-base font-bold px-1 mb-3">Interests</h3>
+                
+                {/* Preset Interests */}
+                <div className="mb-4 space-y-2">
+                    <p className="text-xs text-neutral-500 px-1">Select your interests:</p>
+                    <div className="flex flex-wrap gap-2">
+                        {PRESET_INTERESTS.map(interest => (
+                            <button
+                                key={interest}
+                                type="button"
+                                onClick={() => togglePresetInterest(interest)}
+                                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${
+                                    interests.includes(interest)
+                                        ? 'bg-primary text-white'
+                                        : 'bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 border border-neutral-200 dark:border-neutral-700'
+                                }`}
+                            >
+                                {interest}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+
                 <div className="relative mb-4">
                     <input value={interestInput} onChange={e => setInterestInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && addInterest()} className="w-full bg-white dark:bg-white/5 border border-gray-200 dark:border-white/10 rounded-full h-12 pl-12 pr-5 text-gray-900 dark:text-white focus:ring-2 focus:ring-primary outline-none" placeholder="Type interest & press Enter..." type="text" />
                     <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">search</span>

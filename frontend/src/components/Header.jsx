@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 const Header = () => {
   return (
-    <header className="flex items-center bg-white/90 dark:bg-background-dark/90 backdrop-blur-lg sticky top-0 z-50 px-6 py-4 justify-between border-b border-gray-200 dark:border-white/10 shadow-sm">
+    <header className="flex items-center bg-pink/90 dark:bg-background-dark/90 backdrop-blur-lg sticky top-0 z-50 px-6 py-4 justify-between border-b border-gray-200 dark:border-white/10 shadow-sm">
       <div className="text-primary flex size-12 shrink-0 items-center justify-center bg-primary/12 hover:bg-primary/18 rounded-full transition-colors">
         <span className="material-symbols-outlined text-2xl fill">favorite</span>
       </div>
