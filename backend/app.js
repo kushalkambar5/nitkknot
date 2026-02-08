@@ -11,6 +11,11 @@ import slideRoutes from "./routes/slideRoutes.js";
 
 dotenv.config();
 
+import {
+  generalLimiter,
+  authLimiter,
+} from "./middleware/rateLimitMiddleware.js";
+
 const app = express();
 
 // ==================== Middleware ====================
@@ -19,8 +24,11 @@ app.use(cors({ origin: process.env.FRONTEND_URL || "*" })); // Allow all origins
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+// Apply General Limiter to all API routes
+app.use("/api/", generalLimiter);
+
 // Routes
-app.use("/api/auth", userRoutes);
+app.use("/api/auth", authLimiter, userRoutes);
 app.use("/api/report-issue", appReportIssueRoutes);
 // app.use("/api/chatrooms", chatRoomRoutes); // Removed dead code
 app.use("/api/chats", chatRoutes);
