@@ -284,6 +284,12 @@ const Home = () => {
                     </p>
                 </div>
 
+                <div className="bg-green-500/20 border border-green-500/50 p-3 rounded-xl backdrop-blur-sm animate-pulse">
+                    <p className="text-white text-xs md:text-sm font-bold leading-tight">
+                        This website is a student project created by a first-year student at NITK as part of personal learning. No payments are involved, and features are still under development. And its not a scam.
+                    </p>
+                </div>
+
                 <div className="flex items-center justify-center gap-2 text-sm text-white/80">
                     <span className="material-symbols-outlined text-base">info</span>
                     <Link to="/usermanual" className="hover:text-white underline underline-offset-2 transition-colors">
@@ -343,11 +349,11 @@ const Home = () => {
               </header>
               <main className="flex-1 flex flex-col items-center justify-center text-center p-8 max-w-md mx-auto w-full">
                   <span className="material-symbols-outlined text-6xl text-neutral-300 mb-4">sentiment_dissatisfied</span>
-                  <h3 className="text-xl font-bold">No more profiles</h3>
-                  <p className="text-neutral-500 mb-6">Check back later or adjust your "Interested In" filters.</p>
+                  <h3 className="text-xl font-bold">There are no opposite-gender profiles available at the moment.</h3>
+                  <p className="text-neutral-500 mb-6">Try again later.</p>
                   <button onClick={fetchProfiles} className="px-6 py-2 bg-primary text-white rounded-full font-bold shadow-lg">Refresh</button>
               </main>
-              <BottomNavbar />
+              <BottomNavbar /> 
           </div>
       );
   }
