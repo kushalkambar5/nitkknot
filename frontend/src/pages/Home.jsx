@@ -276,6 +276,13 @@ const Home = () => {
                     Get Started
                   </Button>
                 </Link>
+                
+                <div className="bg-red-500/20 border border-red-500/50 p-3 rounded-xl backdrop-blur-sm animate-pulse">
+                    <p className="text-white text-xs md:text-sm font-bold leading-tight">
+                        Server is very busy and please stop making fake requests and trust it is not a scam its just a project made by a NITK student
+                    </p>
+                </div>
+
                 <div className="flex items-center justify-center gap-2 text-sm text-white/80">
                     <span className="material-symbols-outlined text-base">info</span>
                     <Link to="/usermanual" className="hover:text-white underline underline-offset-2 transition-colors">
