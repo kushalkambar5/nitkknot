@@ -279,7 +279,7 @@ const Home = () => {
                 
                 <div className="bg-red-500/20 border border-red-500/50 p-3 rounded-xl backdrop-blur-sm animate-pulse">
                     <p className="text-white text-xs md:text-sm font-bold leading-tight">
-                        Server is very busy and please stop making fake requests and trust it is not a scam its just a project made by a NITK student
+                        Server is very busy and please stop making fake requests and trust it is not a scam its just a project made by a NITK student. Only boys are creating accounts ask your female friends to create account.
                     </p>
                 </div>
 
