@@ -191,6 +191,12 @@ const Signup = () => {
         }
     };
 
+    const handleRemoveFile = (index) => {
+        const newFiles = [...files];
+        newFiles.splice(index, 1);
+        setFiles(newFiles);
+    };
+
     const handleOtpChange = (index, value) => {
          if (value.length > 1) return;
         const newOtp = [...otp];
@@ -433,7 +439,12 @@ const Signup = () => {
 
                         <div className="flex gap-2 flex-wrap">
                             {Array.from(files).map((f, i) => (
-                                <div key={i} className="text-xs bg-primary/10 text-primary px-2 py-1 rounded">{f.name.substring(0, 10)}...</div>
+                                <div key={i} className="flex items-center gap-1 text-xs bg-primary/10 text-primary px-2 py-1 rounded">
+                                    <span>{f.name.substring(0, 10)}...</span>
+                                    <button type="button" onClick={() => handleRemoveFile(i)} className="hover:text-red-500 flex items-center justify-center">
+                                        <span className="material-symbols-outlined text-[14px]">close</span>
+                                    </button>
+                                </div>
                             ))}
                         </div>
 
