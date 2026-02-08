@@ -117,7 +117,7 @@ const EditProfile = () => {
              formData.append('name', name);
              formData.append('branch', branch);
              formData.append('year', year);
-             formData.append('year', year);
+
              // Gender and InterestedIn are read-only and not sent
              // formData.append('gender', gender); 
              // formData.append('interestedIn', interestedIn);
