@@ -146,7 +146,11 @@ const EditProfile = () => {
              navigate('/profile');
         } catch (err) {
              console.error("Update failed", err);
-             const msg = err.response?.data?.message || err.message || "Failed to update profile";
+             const data = err.response?.data;
+             let msg = data?.message || err.message || "Failed to update profile";
+             if (data?.errors && Array.isArray(data.errors)) {
+                 msg += ":\n" + data.errors.join("\n");
+             }
              alert(msg);
         } finally {
              setLoading(false);

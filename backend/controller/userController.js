@@ -568,7 +568,7 @@ export const updateProfile = handleAsyncError(async (req, res, next) => {
   // Update fields
   if (name) user.name = name;
   if (branch) user.branch = branch;
-  if (year) user.year = year;
+  if (year) user.year = Number(year);
 
   // STRICT RULE: Gender and InterestedIn are READ-ONLY
   // if (gender) user.gender = gender;
