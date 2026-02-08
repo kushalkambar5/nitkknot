@@ -279,7 +279,8 @@ const Home = () => {
                 
                 <div className="bg-red-500/20 border border-red-500/50 p-3 rounded-xl backdrop-blur-sm animate-pulse">
                     <p className="text-white text-xs md:text-sm font-bold leading-tight">
-                        We didn't expect this much traffic and also some people were spamming too much. So we are working on the server handling please give us time to prepare for that.
+                        We didn't expect this much traffic and also some people were spamming too much. So we are working on the server handling please give us time to prepare for that. <br /><br />
+                        Though server is slow you can go and signin/login but its slow.
                     </p>
                 </div>
 

@@ -16,17 +16,7 @@ const Signup = () => {
     const [termsAccepted, setTermsAccepted] = useState(false);
 
     const [isEmailVerified, setIsEmailVerified] = useState(false);
-    const [resendTimer, setResendTimer] = useState(60);
 
-    useEffect(() => {
-        let interval;
-        if (resendTimer > 0) {
-            interval = setInterval(() => {
-                setResendTimer((prev) => prev - 1);
-            }, 1000);
-        }
-        return () => clearInterval(interval);
-    }, [resendTimer]);
 
     const [formData, setFormData] = useState({
         email: '',
@@ -55,7 +45,6 @@ const Signup = () => {
         try {
             await signupSendOtp({ email: formData.email });
             setStep(2); // Move to OTP
-            setResendTimer(60); // Start cooldown
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to send OTP');
         } finally {
@@ -84,13 +73,13 @@ const Signup = () => {
         }
     };
 
+
+
     const handleResendOtp = async () => {
-        if (resendTimer > 0) return;
         setIsLoading(true);
         setError('');
         try {
             await signupSendOtp({ email: formData.email });
-            setResendTimer(60);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to resend OTP');
         } finally {
@@ -261,8 +250,8 @@ const Signup = () => {
                             />
                         </div>
 
-                         <Button onClick={handleStep1} disabled={isLoading || resendTimer > 0}>
-                            {isLoading ? 'Sending OTP...' : resendTimer > 0 ? `Wait ${resendTimer}s` : 'Continue'}
+                         <Button onClick={handleStep1} disabled={isLoading}>
+                            {isLoading ? 'Sending OTP...' : 'Continue'}
                         </Button>
                     </div>
                 )}
@@ -295,12 +284,10 @@ const Signup = () => {
                         <div className="text-center mt-2">
                              <button
                                 onClick={handleResendOtp}
-                                disabled={resendTimer > 0 || isLoading}
-                                className={`text-sm font-medium ${
-                                    resendTimer > 0 ? 'text-neutral-400 cursor-not-allowed' : 'text-primary hover:underline'
-                                }`}
+                                disabled={isLoading}
+                                className={`text-sm font-medium text-primary hover:underline`}
                             >
-                                {resendTimer > 0 ? `Resend OTP in ${resendTimer}s` : 'Resend OTP'}
+                                Resend OTP
                             </button>
                         </div>
                         <button onClick={() => setStep(1)} className="w-full text-center text-sm text-neutral-500 hover:text-primary mt-2">Change Email</button>

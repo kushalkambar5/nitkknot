@@ -24,6 +24,10 @@ app.use(cors({ origin: process.env.FRONTEND_URL || "*" })); // Allow all origins
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
+app.use("/", (req, res) => {
+  res.send("Server is running");
+});
+
 // Apply General Limiter to all API routes
 app.use("/api/", generalLimiter);
 
