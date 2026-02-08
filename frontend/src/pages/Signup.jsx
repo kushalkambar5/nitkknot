@@ -32,9 +32,10 @@ const Signup = () => {
 
     // Step 1: Email Input -> Send OTP
     const handleStep1 = async () => {
-        if (!formData.email.endsWith('@nitk.edu.in')) {
-            setError('Please use a valid @nitk.edu.in email');
-            return;
+        const emailRegex = /^[a-zA-Z0-9._%+-]+\.\d{3}[A-Za-z]{2}\d{3}@nitk\.edu\.in$/;
+        if (!emailRegex.test(formData.email)) {
+             setError('Email must be in format: name.RollNo@nitk.edu.in (e.g., name.211CS123@nitk.edu.in)');
+             return;
         }
         setError('');
         setIsLoading(true);

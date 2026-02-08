@@ -19,10 +19,13 @@ const createToken = (id) => {
 export const sendSignupOtp = handleAsyncError(async (req, res, next) => {
   const { email } = req.body;
 
-  if (!email || !email.endsWith("@nitk.edu.in")) {
+  // Regex: name.RollNo@nitk.edu.in (RollNo = 3 digits + 2 letters + 3 digits)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+\.\d{3}[A-Za-z]{2}\d{3}@nitk\.edu\.in$/;
+
+  if (!email || !emailRegex.test(email)) {
     return res.status(400).json({
       success: false,
-      message: "Please provide a valid @nitk.edu.in email address.",
+      message: "Invalid email format. Must be name.RollNo@nitk.edu.in",
     });
   }
 
