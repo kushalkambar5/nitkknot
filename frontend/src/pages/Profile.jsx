@@ -231,7 +231,7 @@ const Profile = () => {
           </div>
           
            <div className="text-center text-[10px] text-neutral-400 uppercase tracking-widest font-bold opacity-50 pb-4">
-              Version 3.1.0 Student
+              Version 1.0.0 Student
           </div>
       </div>
 
